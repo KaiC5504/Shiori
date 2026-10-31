@@ -37,6 +37,7 @@ shoot 08-icons 8 -DemoIcons YES
 shoot 09-settings-en 8 -DemoTab settings -DemoLanguage en -AppleLanguages "(zh-Hans)"
 shoot 10-accent 8 -DemoTab settings -DemoSettingsPage accent -DemoAccent sealVermilion
 shoot 11-txt-settings 8 -DemoTab settings -DemoSettingsPage txt
+shoot 16-app-icon 8 -DemoTab settings -DemoSettingsPage appIcon
 shoot 12-import-folder 12 -DemoTab imports -DemoWatchedFolder YES -DemoImportResults YES
 shoot 13-reader-chrome 12 -DemoTab shelf -DemoReader 1 -DemoChrome YES
 shoot 14-appearance 12 -DemoTab shelf -DemoReader 1 -DemoAppearance YES

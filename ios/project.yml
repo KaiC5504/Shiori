@@ -47,6 +47,9 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.kaichuan.shiori
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # The picker in Settings → Appearance → App icon (AppIconSettingsView).
+        ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES: AppIcon-BlackViolet AppIcon-CreamCover AppIcon-Original AppIcon-RoseRibbon AppIcon-LightNovel AppIcon-Lavender
+        ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
     info:
       path: Generated/Shiori-Info.plist
       properties:

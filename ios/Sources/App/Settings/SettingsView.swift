@@ -2,7 +2,7 @@ import SwiftUI
 
 /// The pages one tap below the tab. Raw values match `-DemoSettingsPage`.
 enum SettingsPage: String, Hashable {
-    case accent, txt
+    case accent, txt, appIcon
 }
 
 /// Spec §9: compact grouped rows that change in place, with deeper pages that zoom out of
@@ -116,6 +116,10 @@ struct SettingsView: View {
             }
         }
         SettingsDivider()
+        pageRow(.appIcon) {
+            SettingsRow("App icon") { SettingsGlyph.push.image }
+        }
+        SettingsDivider()
         SettingsToggleRow("Reduce motion in Shiori",
                           footnote: Text("Animations become short fades."),
                           isOn: $settings.reduceMotion.animation(changeAnimation))
@@ -194,6 +198,7 @@ struct SettingsView: View {
             switch page {
             case .accent: AccentSettingsView()
             case .txt: TXTSettingsView()
+            case .appIcon: AppIconSettingsView()
             }
         }
         .modifier(ZoomOutOfRow(id: page, namespace: zoom))
