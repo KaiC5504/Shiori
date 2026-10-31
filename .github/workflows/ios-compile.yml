@@ -44,8 +44,9 @@ jobs:
         run: cd ios && xcodegen generate
 
       # Screenshots are reviewed at the 17 Pro Max's size (1320 x 2868). The image ships
-      # some iPhones but not necessarily that one, so create it when the runtime supports
-      # it; any other iPhone only keeps the check running.
+      # some iPhones but not necessarily that one, so create it from its device type when
+      # needed. A fallback keeps the check running, but never on a two-display device such
+      # as "iPhone Duo", which `simctl io screenshot` refuses.
       - name: Boot a simulator
         id: sim
         run: |
@@ -54,19 +55,32 @@ jobs:
           WANT = 'iPhone 17 Pro Max'
           def simctl(*args):
               return json.loads(subprocess.check_output(['xcrun', 'simctl', 'list', *args, '-j']))
-          runtimes = [r for r in simctl('runtimes', 'available')['runtimes']
-                      if r['identifier'].startswith('com.apple.CoreSimulator.SimRuntime.iOS')]
-          runtime = max(runtimes, key=lambda r: tuple(int(x) for x in r['version'].split('.')))
-          devices = simctl('devices', 'available')['devices'].get(runtime['identifier'], [])
-          for d in devices:
-              if d['name'] == WANT:
-                  print(d['udid'], 'yes', d['name']); sys.exit()
-          for t in runtime.get('supportedDeviceTypes', []):
-              if t['name'] == WANT:
-                  udid = subprocess.check_output(['xcrun', 'simctl', 'create', WANT, t['identifier'], runtime['identifier']], text=True).strip()
-                  print(udid, 'yes', WANT); sys.exit()
-          last = [d for d in devices if 'iPhone' in d['name']][-1]
-          print(last['udid'], 'no', last['name'])
+          def version(r):
+              return tuple(int(x) for x in r['version'].split('.'))
+          runtimes = sorted((r for r in simctl('runtimes', 'available')['runtimes']
+                             if r['identifier'].startswith('com.apple.CoreSimulator.SimRuntime.iOS')),
+                            key=version, reverse=True)
+          devices = simctl('devices', 'available')['devices']
+          types = [t for t in simctl('devicetypes')['devicetypes'] if t['name'].startswith('iPhone')]
+          print('iOS runtimes:', [r['name'] for r in runtimes], file=sys.stderr)
+          print('iPhone device types:', [t['name'] for t in types], file=sys.stderr)
+          for r in runtimes:
+              for d in devices.get(r['identifier'], []):
+                  if d['name'] == WANT:
+                      print(d['udid'], 'yes', d['name']); sys.exit()
+          for t in types:
+              if t['name'] != WANT:
+                  continue
+              for r in runtimes:
+                  try:
+                      udid = subprocess.check_output(['xcrun', 'simctl', 'create', WANT, t['identifier'], r['identifier']], text=True).strip()
+                      print(udid, 'yes', WANT); sys.exit()
+                  except subprocess.CalledProcessError:
+                      print('could not create', WANT, 'on', r['name'], file=sys.stderr)
+          singles = [d for d in devices.get(runtimes[0]['identifier'], [])
+                     if d['name'].startswith('iPhone') and 'Duo' not in d['name']]
+          pick = next((d for d in reversed(singles) if 'Pro Max' in d['name']), singles[-1])
+          print(pick['udid'], 'no', pick['name'])
           ")"
           if [ "$NAME_OK" != yes ]; then
             echo "::warning::No iPhone 17 Pro Max simulator on this image; using $NAME. Screenshot sizes will differ."
