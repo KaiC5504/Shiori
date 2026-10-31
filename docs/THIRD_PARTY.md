@@ -1,7 +1,7 @@
 # Third-party code
 
 Everything Shiori ships that it didn't write. Keep this list and the in-app Licenses page
-(Settings → About → Licenses) in step. Only MIT, BSD or Apache licensed code is allowed
+(Settings → About → Licenses, which arrives with the full Settings tab) in step. Only MIT, BSD or Apache licensed code is allowed
 (see the spec, §3).
 
 | Component | Version | License | Use |
