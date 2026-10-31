@@ -44,6 +44,17 @@ final class ReaderScrollTests: XCTestCase {
         assertStill(back)
     }
 
+    /// KaiC's build 2 report: right after a jump, scrolling up ran away on its own, chapter
+    /// after chapter, because each chapter added above the reader pulled in the next.
+    func testScrollingUpRightAfterAJumpStaysNearby() {
+        for _ in 0..<4 { app.swipeDown(velocity: .fast) }
+        settle()
+        let back = top()
+        XCTAssertLessThan(back.place.chapter, 1500, "scrolling up didn't leave the jump target: \(back.label)")
+        XCTAssertGreaterThanOrEqual(back.place.chapter, 1496, "ran away upwards to \(back.label)")
+        assertStill(back)
+    }
+
     func testSlowScrollingAcrossAChapterBoundaryNeverJumps() {
         var previous = top()
         for _ in 0..<10 {
