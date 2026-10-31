@@ -42,10 +42,10 @@ libtests() {
   done
 }
 
-# `uitests=testName` runs one ReaderScrollTests case.
+# `uitests=Class/testName` (or `uitests=Class`) runs only that.
 uitests() {
   local only=()
-  [ -n "${1:-}" ] && only=(-only-testing:"ShioriUITests/ReaderScrollTests/$1")
+  [ -n "${1:-}" ] && only=(-only-testing:"ShioriUITests/$1")
   xcodebuild test -project ios/Shiori.xcodeproj -scheme ShioriUITests -destination "id=$UDID" \
     -derivedDataPath ~/dd "${SIGN[@]}" ${only[@]+"${only[@]}"} > ~/logs/uitests.log 2>&1 || status=1
   grep -E "Test Case .*(passed|failed)|error: -\[|\*\* TEST" ~/logs/uitests.log | sed -E 's/^.*\[ShioriUITests\.//' | cut -c1-200
