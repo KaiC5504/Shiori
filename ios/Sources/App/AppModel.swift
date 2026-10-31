@@ -37,6 +37,7 @@ final class AppModel {
         let model = AppModel(paths: paths, database: try LibraryDatabase(path: paths.database))
         let importer = model.importer
         model.cleanup = Task {
+            await ImportInbox.clear()
             do {
                 try await importer.cleanStaging()
             } catch {

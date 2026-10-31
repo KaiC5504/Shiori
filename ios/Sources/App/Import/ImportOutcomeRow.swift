@@ -47,8 +47,17 @@ struct ImportOutcomeRow: View {
         }
     }
 
+    @ViewBuilder
     private var title: some View {
-        Text(verbatim: displayName)
+        if case .failed(let fileName, _) = outcome, fileName.isEmpty {
+            titleStyle(Text("Import files"))
+        } else {
+            titleStyle(Text(verbatim: displayName))
+        }
+    }
+
+    private func titleStyle(_ text: Text) -> some View {
+        text
             .font(.body)
             .foregroundStyle(Tokens.ink)
             .lineLimit(2)
