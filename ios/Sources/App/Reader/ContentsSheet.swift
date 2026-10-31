@@ -1,20 +1,34 @@
 import ShioriLibrary
 import SwiftUI
 
-/// The book's chapters grouped by volume. A `List` builds rows only as they scroll in, which
-/// is what keeps a 5,000-chapter book's contents instant.
+/// The Contents sheet (spec §7.7, §7.8): a glass sheet with search, order and close. Its `List`
+/// builds rows only as they scroll in, which is what keeps a 5,000-chapter book's contents
+/// instant.
 struct ContentsSheet: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.motionReduced) private var reduced
     let chapters: [Chapter]
     let current: Int
     let onSelect: (Int) -> Void
-    private let sections: [ContentsSection]
+
+    @State private var query: String
+    @State private var searching: Bool
+    @State private var reversed = false
+    @State private var focusesField = false
+    @FocusState private var fieldFocused: Bool
+    @Namespace private var glass
 
     init(chapters: [Chapter], current: Int, onSelect: @escaping (Int) -> Void) {
         self.chapters = chapters
         self.current = current
         self.onSelect = onSelect
-        sections = ContentsSection.group(chapters)
+        #if DEBUG
+        let demoQuery = DemoLaunch.contentsQuery ?? ""
+        #else
+        let demoQuery = ""
+        #endif
+        _query = State(initialValue: demoQuery)
+        _searching = State(initialValue: !demoQuery.isEmpty)
     }
 
     var body: some View {
@@ -22,92 +36,149 @@ struct ContentsSheet: View {
             header
             ScrollViewReader { proxy in
                 List {
-                    ForEach(sections) { section in
-                        Section {
-                            ForEach(section.chapters, id: \.self) { index in
-                                row(index)
-                            }
-                        } header: {
-                            if let volume = section.volume {
-                                Text(verbatim: volume)
-                                    .font(.footnote.weight(.semibold))
-                                    .foregroundStyle(Tokens.inkSecondary)
-                            }
-                        }
+                    ContentsSections(chapters: chapters, current: current, query: query,
+                                     reversed: reversed) { index in
+                        onSelect(index)
+                        dismiss()
                     }
                 }
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
+                .scrollDismissesKeyboard(.immediately)
+                // Thousands of rows swapping at once would stall in an animated diff.
+                .animation(nil, value: query)
+                .animation(nil, value: reversed)
                 .task {
                     // A List in a sheet can drop a scroll asked for before its first layout.
                     await Task.yield()
                     proxy.scrollTo(current, anchor: .center)
                 }
+                .onChange(of: reversed) {
+                    Task {
+                        await Task.yield()
+                        proxy.scrollTo(current, anchor: .center)
+                    }
+                }
             }
         }
-        .background(Tokens.surface)
         .presentationDetents([.fraction(0.7), .large])
         .presentationDragIndicator(.visible)
-        .presentationBackground(Tokens.surface)
+        .shioriHaptic(.selection, trigger: reversed)
     }
 
     private var header: some View {
-        HStack {
-            Text("Contents")
-                .font(.title2.bold())
-                .foregroundStyle(Tokens.ink)
-                .accessibilityAddTraits(.isHeader)
-            Spacer()
-            Button {
-                dismiss()
-            } label: {
-                Label("Close", systemImage: "xmark")
-                    .labelStyle(.iconOnly)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Tokens.ink)
-                    .frame(width: 36, height: 36)
-                    .background(Tokens.paper, in: Circle())
-                    .frame(width: 44, height: 44)
-                    .contentShape(.rect)
+        GlassEffectContainer(spacing: 10) {
+            HStack(spacing: 10) {
+                if searching {
+                    searchField
+                        .glassEffect(.regular.interactive(), in: .capsule)
+                        .modifier(GlassMorph(id: "search", namespace: glass, enabled: !reduced))
+                } else {
+                    Text("Contents")
+                        .font(.title2.bold())
+                        .foregroundStyle(Tokens.ink)
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityAddTraits(.isHeader)
+                        .transition(reduced ? .opacity : .opacity.combined(with: .offset(x: -16)))
+                    Button(action: openSearch) {
+                        IconView(.search, size: 20)
+                            .frame(width: 44, height: 44)
+                            .contentShape(.circle)
+                    }
+                    .buttonStyle(.plain)
+                    .glassEffect(.regular.interactive(), in: .circle)
+                    .modifier(GlassMorph(id: "search", namespace: glass, enabled: !reduced))
+                    .accessibilityLabel(Text("Search chapters"))
+                    .accessibilityIdentifier("contents.search")
+                }
+                orderButton
+                closeButton
             }
-            .buttonStyle(.plain)
         }
         .padding(.leading, 20)
         .padding(.trailing, 12)
         .padding(.top, 16)
-        .padding(.bottom, 4)
+        .padding(.bottom, 6)
     }
 
-    private func row(_ index: Int) -> some View {
-        let isCurrent = index == current
-        return Button {
-            onSelect(index)
-            dismiss()
-        } label: {
-            HStack(spacing: 14) {
-                Text(verbatim: "\(index + 1)")
-                    .font(.system(size: 13, design: .monospaced))
-                    .foregroundStyle(Tokens.inkSecondary)
-                    .frame(minWidth: 40, alignment: .leading)
-                Self.title(of: chapters[index], at: index)
-                    .font(.body.weight(isCurrent ? .semibold : .regular))
-                    .foregroundStyle(Tokens.ink)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                if isCurrent {
-                    Circle()
-                        .fill(Tokens.ink)
-                        .frame(width: 7, height: 7)
-                        .accessibilityHidden(true)
+    private var searchField: some View {
+        HStack(spacing: 8) {
+            IconView(.search, size: 18)
+            TextField("Search chapters", text: $query)
+                .font(.body)
+                .foregroundStyle(Tokens.ink)
+                .textFieldStyle(.plain)
+                .focused($fieldFocused)
+                .submitLabel(.search)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
+                .onSubmit { fieldFocused = false }
+                .onAppear {
+                    // Only a tap on search raises the keyboard; a demo query leaves the results clear.
+                    if focusesField { fieldFocused = true }
                 }
+                .accessibilityIdentifier("contents.query")
+            Button(action: closeSearch) {
+                IconView(.close, size: 14)
+                    .frame(width: 36, height: 36)
+                    .contentShape(.circle)
             }
-            .padding(.vertical, 4)
-            .contentShape(.rect)
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("Cancel"))
+            .accessibilityIdentifier("contents.cancelSearch")
+        }
+        .padding(.leading, 14)
+        .padding(.trailing, 4)
+        .frame(maxWidth: .infinity, minHeight: 44)
+    }
+
+    private var orderButton: some View {
+        Button {
+            reversed.toggle()
+        } label: {
+            ZStack {
+                Text(reversed ? "Reversed" : "In order")
+                    .id(reversed)
+                    .transition(reduced ? .opacity : .push(from: .bottom))
+            }
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(Tokens.ink)
+            .lineLimit(1)
+            .padding(.horizontal, 16)
+            .frame(height: 44)
+            .clipped()
+            .contentShape(.capsule)
         }
         .buttonStyle(.plain)
-        .listRowBackground(isCurrent ? Tokens.paper : Color.clear)
-        .listRowSeparatorTint(Tokens.line)
-        .accessibilityValue(isCurrent ? Text("Current chapter") : Text(verbatim: ""))
-        .accessibilityAddTraits(isCurrent ? .isSelected : [])
+        .glassEffect(.regular.interactive(), in: .capsule)
+        .animation(Motion.animation(Motion.lens, reduced: reduced), value: reversed)
+        .accessibilityIdentifier("contents.order")
+    }
+
+    private var closeButton: some View {
+        Button {
+            dismiss()
+        } label: {
+            IconView(.close, size: 18)
+                .frame(width: 44, height: 44)
+                .contentShape(.circle)
+        }
+        .buttonStyle(.plain)
+        .glassEffect(.regular.interactive(), in: .circle)
+        .accessibilityLabel(Text("Close"))
+        .accessibilityIdentifier("contents.close")
+    }
+
+    private func openSearch() {
+        focusesField = true
+        withAnimation(Motion.animation(Motion.lens, reduced: reduced)) { searching = true }
+    }
+
+    private func closeSearch() {
+        query = ""
+        fieldFocused = false
+        withAnimation(Motion.animation(Motion.lens, reduced: reduced)) { searching = false }
     }
 
     static func title(of chapter: Chapter, at index: Int) -> Text {
@@ -130,28 +201,18 @@ struct ContentsSheet: View {
     }
 }
 
-/// A run of consecutive chapters that share a volume (or have none).
-private struct ContentsSection: Identifiable {
-    // Its own type, so `scrollTo(chapterIndex)` can never land on a section header instead.
-    struct ID: Hashable {
-        let start: Int
-    }
+/// The search button and field morph into each other, except under Reduce Motion, where they
+/// only fade.
+private struct GlassMorph: ViewModifier {
+    let id: String
+    let namespace: Namespace.ID
+    let enabled: Bool
 
-    let id: ID
-    let volume: String?
-    let chapters: Range<Int>
-
-    static func group(_ chapters: [Chapter]) -> [ContentsSection] {
-        var sections: [ContentsSection] = []
-        var start = 0
-        while start < chapters.count {
-            let volume = chapters[start].volume
-            var end = start + 1
-            while end < chapters.count, chapters[end].volume == volume { end += 1 }
-            let label = volume.flatMap { $0.isEmpty ? nil : $0 }
-            sections.append(ContentsSection(id: ID(start: start), volume: label, chapters: start..<end))
-            start = end
+    func body(content: Content) -> some View {
+        if enabled {
+            content.glassEffectID(id, in: namespace)
+        } else {
+            content
         }
-        return sections
     }
 }
