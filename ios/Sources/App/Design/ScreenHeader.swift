@@ -12,17 +12,22 @@ struct ScreenHeader: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 2) {
             Text(verbatim: code)
-                .font(.system(size: 12, design: .monospaced))
-                .tracking(1.2)
+                .font(.system(.caption, design: .monospaced))
+                .tracking(1.5)
+                .textCase(.uppercase)
                 .foregroundStyle(Tokens.inkSecondary)
+                .staggeredReveal(0)
             Text(title)
-                .font(.largeTitle.bold())
+                .font(.largeTitle.weight(.heavy))
                 .foregroundStyle(Tokens.ink)
+                .staggeredReveal(1)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
+        // The code line is decoration; VoiceOver reads the title alone.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(title))
         .accessibilityAddTraits(.isHeader)
     }
 }
