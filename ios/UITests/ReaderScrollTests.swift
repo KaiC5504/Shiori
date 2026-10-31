@@ -90,7 +90,12 @@ final class ReaderScrollTests: XCTestCase {
             .firstMatch.waitForExistence(timeout: 60), "reopened somewhere other than chapter \(far.place.chapter)")
         settle()
         let reopened = top()
-        XCTAssertEqual(reopened.place, far.place, "left at \(far.label), reopened at \(reopened.label)")
+        // The saved paragraph is the one at the top edge, which can be the tail of the
+        // paragraph above the first fully visible one; reopening shows it from its start.
+        XCTAssertEqual(reopened.place.chapter, far.place.chapter, "left at \(far.label), reopened at \(reopened.label)")
+        XCTAssertLessThanOrEqual(reopened.place, far.place, "reopened ahead: \(reopened.label), left at \(far.label)")
+        XCTAssertLessThanOrEqual(far.place.paragraph - reopened.place.paragraph, 1,
+                                 "left at \(far.label), reopened at \(reopened.label)")
     }
 
     private struct Place: Comparable {
