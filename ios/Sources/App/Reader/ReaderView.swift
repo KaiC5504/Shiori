@@ -481,6 +481,11 @@ struct ReaderView: View {
                 // Set before the scroll view exists, so its first layout is already at the paragraph.
                 position.scrollTo(id: jump.anchor, anchor: .top)
                 shownLayout = .scroll
+                // Its first placement measures none of the paragraphs above the target, and under
+                // the Aa sheet it came to rest paragraphs short. Placing it again once it has laid
+                // out, as `keepPlace` does after new type, puts the paragraph at the top.
+                try? await Task.sleep(for: .milliseconds(100))
+                position.scrollTo(id: jump.anchor, anchor: .top)
                 await land(jump, in: reader)
             }
         }
