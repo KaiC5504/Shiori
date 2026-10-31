@@ -66,13 +66,10 @@ struct ReaderView: View {
             ReaderColumn(reader: reader)
         }
         .scrollPosition($position, anchor: .top)
+        // One signal only: a second one disagrees with it at chapter breaks and flips the
+        // current chapter back and forth.
         .onChange(of: position.viewID(type: ParagraphAnchor.self)) { _, anchor in
             if let anchor { reader.visibleAnchorChanged(anchor) }
-        }
-        // A second, independent signal, in case `viewID` isn't updated by user scrolls.
-        .onScrollTargetVisibilityChange(idType: ParagraphAnchor.self, threshold: 0.1) { visible in
-            let top = visible.min { ($0.chapter, $0.block) < ($1.chapter, $1.block) }
-            if let top { reader.visibleAnchorChanged(top) }
         }
         .onScrollPhaseChange { _, phase in
             if phase == .interacting, showsBar { setBar(false) }
@@ -122,10 +119,11 @@ struct ReaderView: View {
         guard reader == nil, !openFailed else { return }
         do {
             let reader = try await ReaderModel.open(book: book, database: model.database, paths: model.paths)
-            await reader.start()
+            let jump = await reader.start()
             // Set before the scroll view exists, so its first layout is already at the paragraph.
             position.scrollTo(id: reader.initialAnchor, anchor: .top)
             self.reader = reader
+            if let jump { await land(jump, in: reader) }
         } catch {
             openFailed = true
             return
@@ -146,10 +144,16 @@ struct ReaderView: View {
     private func jump(to chapter: Int) {
         guard let reader else { return }
         Task {
-            if await reader.show(chapter: chapter) {
-                position.scrollTo(id: ParagraphAnchor(chapter: chapter, block: 0), anchor: .top)
-            }
+            guard let jump = await reader.show(chapter: chapter) else { return }
+            position.scrollTo(id: jump.anchor, anchor: .top)
+            await land(jump, in: reader)
         }
+    }
+
+    /// `scrollTo` only takes effect at the next layout, so tracking resumes a few frames later.
+    private func land(_ jump: ReaderJump, in reader: ReaderModel) async {
+        try? await Task.sleep(for: .milliseconds(300))
+        reader.finishJump(jump)
     }
 
     private func close() {
