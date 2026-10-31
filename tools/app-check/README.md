@@ -14,7 +14,8 @@ does not, Swift 5 mode, iOS 26.0. If a target, source folder or dependency chang
 
 - It stops at the first file that fails, so it may show one error per run. Fix it and run again.
 - Tests. ShioriCore's run on Windows with `swift test`; ShioriLibrary's (GRDB, ZIP, decoding,
-  the importer) run only on CI.
+  the importer) run only on CI. `tools/check-lib-tests.sh` compiles them in WSL without running
+  them, so a test that doesn't compile is caught before CI.
 - The simulator, launching the app and screenshots: CI only.
 - The asset catalog, the string catalog, Info.plist and signing: only `.swift` files are staged.
 - The SDK and compiler can differ from CI's. A clean local run is a strong hint, not proof; the

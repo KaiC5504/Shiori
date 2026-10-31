@@ -921,6 +921,10 @@ let sonovelOPF = """
 - [ ] **Step 4: Run `bash tools/check-app.sh`, commit, ship, and watch CI. Expected: pass.** Note the 5,000-chapter timing from the log in the
   commit message body. Commit "Import EPUB and TXT books".
 
+> **Execution note (2026-10-31):** Tasks 12–16 now run in parallel waves per
+> `docs/superpowers/plans/2026-10-31-m1-parallel-finish.md`. The task bodies below stay
+> the requirements; that plan owns file ownership and order.
+
 ### Task 12: App model, tokens and the full-width bar
 
 **Files:**

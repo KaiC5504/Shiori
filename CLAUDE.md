@@ -18,8 +18,11 @@ minimum is iOS 26.
 
 1. If the milestone has no plan yet, write one with `superpowers:writing-plans`, from
    the spec and from what is actually in the repo. Show it to KaiC before building.
-2. Execute it task by task (`superpowers:subagent-driven-development` or
-   `superpowers:executing-plans`), on the local `dev` branch (see Branches below).
+2. Execute it with the project skill `running-a-milestone`
+   (`.claude/skills/running-a-milestone/SKILL.md`): a contracts commit, then parallel
+   agents in worktrees that each own their own files, merged on the local `dev` branch
+   (see Branches below), then a parallel check round. KaiC approves the plan; after that
+   it runs straight through to TestFlight.
 3. When the roadmap's "done when" passes in the simulator screenshots, ship a TestFlight
    build (below). Report the build number, what changed, how it works, and numbered test
    steps for the phone. KaiC doesn't read code: a milestone is done when he can confirm
