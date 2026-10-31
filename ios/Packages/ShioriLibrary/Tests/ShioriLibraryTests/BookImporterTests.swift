@@ -44,6 +44,22 @@ import Testing
     #expect(try FileManager.default.contentsOfDirectory(atPath: env.paths.books.path).isEmpty)
     #expect(try FileManager.default.contentsOfDirectory(atPath: env.paths.staging.path).isEmpty)
 }
+@Test func failedImportsOfEveryKindLeaveNoFiles() async throws {
+    let env = try TestEnvironment()
+    let garbage = Data((0..<4096).map { _ in UInt8.random(in: 0...255) })
+    let urls = [
+        try env.writeFile(name: "乱码.epub", data: garbage),
+        try env.writeEPUBWithoutContainer(),
+        try env.writeTXT(name: "空.txt", text: "", encoding: .utf8),
+    ]
+    for url in urls {
+        let outcome = await env.importer.importFile(at: url)
+        guard case .failed = outcome else { Issue.record("\(url.lastPathComponent): \(outcome)"); continue }
+        #expect(try FileManager.default.contentsOfDirectory(atPath: env.paths.books.path).isEmpty)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: env.paths.staging.path).isEmpty)
+    }
+    #expect(try env.db.bookList().isEmpty)
+}
 @Test func cleanStagingRemovesLeftovers() async throws {
     let env = try TestEnvironment()
     try FileManager.default.createDirectory(at: env.paths.staging.appending(path: "orphan"), withIntermediateDirectories: true)

@@ -99,9 +99,11 @@ public final class LibraryDatabase: Sendable {
     }
 
     /// Calls `onChange` on the main queue with the current list, then after every change.
+    /// Call it on the main thread: the first list arrives before it returns, so the shelf never flashes empty.
     public func observeBookList(_ onChange: @escaping @Sendable ([BookListItem]) -> Void) -> AnyDatabaseCancellable {
         ValueObservation.tracking { db in try Self.bookList(db) }.start(
             in: queue,
+            scheduling: .immediate,
             onError: { error in Self.log.error("book list observation failed: \(error)") },
             onChange: onChange)
     }

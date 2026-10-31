@@ -41,3 +41,21 @@ private let yueyangTraditional = "慶曆四年春，滕子京謫守巴陵郡。�
     #expect(r.text.hasPrefix(yueyang))
     #expect(r.encoding == TextDecoding.gb18030)
 }
+
+private let generated = "雨停以后，小镇的石板路还亮着水光。她把旧信折好放进木箱，转身去点灯，窗外的河慢慢涨了一寸。"
+
+@Test func utf8CutMidCharacterStaysUTF8() throws {
+    let passage = String(repeating: generated, count: 50)
+    let data = Data(passage.utf8) + Data([0xE4, 0xBD])
+    let r = try TextDecoding.decode(data)
+    #expect(r.encoding == .utf8)
+    #expect(r.text.hasPrefix(passage))
+}
+@Test func utf8WithOneStrayByteStaysUTF8() throws {
+    let half = String(repeating: generated, count: 25)
+    let data = Data(half.utf8) + Data([0xFF]) + Data(half.utf8)
+    let r = try TextDecoding.decode(data)
+    #expect(r.encoding == .utf8)
+    #expect(r.text.hasPrefix(half))
+    #expect(r.text.hasSuffix(half))
+}

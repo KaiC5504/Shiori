@@ -29,13 +29,23 @@ public enum TextDecoding {
         if let text = String(data: data, encoding: .utf8) {
             return (stripBOM(text), .utf8)
         }
+        // A download cut off mid-character leaves up to three dangling bytes.
+        for cut in 1...3 where data.count > cut {
+            if let text = String(data: data.dropLast(cut), encoding: .utf8) {
+                return (stripBOM(text), .utf8)
+            }
+        }
+        // Before the Chinese encodings, because UTF-8 continuation bytes pass for Big5 trail
+        // bytes and a lossy Big5 decode of UTF-8 succeeds as mojibake.
+        if let text = mostlyUTF8(data) {
+            return (stripBOM(text), .utf8)
+        }
         // Nearly every Big5 file is also valid GB18030 (as nonsense) and the reverse is
         // often true, so validity can't choose between them; byte statistics can.
         let likely = looksLikeBig5(data) ? big5 : gb18030
         if let text = String(data: data, encoding: likely) {
             return (stripBOM(text), likely)
         }
-        // A download cut off mid-character leaves up to three dangling bytes.
         for cut in 1...3 where data.count > cut {
             if let text = String(data: data.dropLast(cut), encoding: likely) {
                 return (stripBOM(text), likely)
@@ -49,6 +59,25 @@ public enum TextDecoding {
 
     private static func stripBOM(_ text: String) -> String {
         text.hasPrefix("\u{FEFF}") ? String(text.dropFirst()) : text
+    }
+
+    /// UTF-8 with a few corrupt bytes: at most 0.1% replacements, and more real non-ASCII
+    /// characters than replacements, so mostly-ASCII GBK text doesn't qualify by accident.
+    static func mostlyUTF8(_ data: Data) -> String? {
+        let text = String(decoding: data, as: UTF8.self)
+        var total = 0
+        var replaced = 0
+        var multiByte = 0
+        for scalar in text.unicodeScalars {
+            total += 1
+            if scalar == "\u{FFFD}" {
+                replaced += 1
+            } else if !scalar.isASCII {
+                multiByte += 1
+            }
+        }
+        guard multiByte > replaced, replaced * 1000 <= total else { return nil }
+        return text
     }
 
     /// Big5 puts about a third of common characters on trail bytes 0x40–0x7E, which GBK
