@@ -21,14 +21,19 @@ public enum ChapterSplitter {
             .filter { !$0.isEmpty }
 
         let compiled = rules.compactMap { rule in
-            (try? NSRegularExpression(pattern: rule.pattern)).map { (regex: $0, isVolume: rule.isVolume) }
+            (try? NSRegularExpression(pattern: rule.pattern)).map { (id: rule.id, regex: $0, isVolume: rule.isVolume) }
         }
-        func headingKind(_ line: String) -> Bool? {
+        func matches(_ rule: (id: String, regex: NSRegularExpression, isVolume: Bool), _ line: String) -> Bool {
             let whole = NSRange(line.startIndex..., in: line)
-            for rule in compiled where rule.regex.firstMatch(in: line, range: whole)?.range == whole {
-                return rule.isVolume
-            }
-            return nil
+            return rule.regex.firstMatch(in: line, range: whole)?.range == whole
+        }
+        // "3.5万块买下它" and "1、先去买菜" are ordinary body lines in a book that has real chapter headings.
+        let hasStrongHeadings = lines.contains { line in
+            compiled.contains { ($0.id == "zh-chapter" || $0.id == "en-chapter") && matches($0, line) }
+        }
+        let active = compiled.filter { !($0.id == "numbered" && hasStrongHeadings) }
+        func headingKind(_ line: String) -> Bool? {
+            active.first { matches($0, line) }?.isVolume
         }
 
         var chapters: [TextChapter] = []
@@ -65,7 +70,21 @@ public enum ChapterSplitter {
         }
         guard sawHeading else { return parts(of: lines, maxLength: fallbackLength) }
         flush()
-        return chapters
+        chapters = droppingContentsPages(chapters)
+        // A file of only volume lines has no chapters, which would read as an empty book.
+        return chapters.isEmpty ? parts(of: lines, maxLength: fallbackLength) : chapters
+    }
+
+    /// A contents page at the top lists the same headings again with nothing under them; the real
+    /// chapter with the same title comes later. A lone empty chapter has no twin and stays.
+    private static func droppingContentsPages(_ chapters: [TextChapter]) -> [TextChapter] {
+        let titles = chapters.map { TitleNormalizer.normalize($0.title) }
+        return chapters.enumerated().filter { index, chapter in
+            guard chapter.body.isEmpty, !chapter.title.isEmpty else { return true }
+            return !chapters.indices.contains { later in
+                later > index && !chapters[later].body.isEmpty && titles[later] == titles[index]
+            }
+        }.map(\.element)
     }
 
     /// Cuts heading-less text into untitled parts at line boundaries.

@@ -35,3 +35,30 @@ import Testing
     #expect(parts.allSatisfy { $0.title.isEmpty })
     #expect(parts.map(\.body).joined(separator: "\n") == text)
 }
+@Test func numberedRuleDoesNotEatBodyLines() {
+    let text = "第一章 甲\n他花了\n3.5万块买下它\n1、先去买菜\n结束"
+    let ch = ChapterSplitter.split(text, rules: ChapterRule.presets)
+    #expect(ch.map(\.title) == ["第一章 甲"])
+    #expect(ch.first?.body == "他花了\n3.5万块买下它\n1、先去买菜\n结束")
+}
+@Test func chapterWordInsideASentenceIsNotAHeading() {
+    let text = "第一章 开始\n第一节课是数学课。\n第三回合，他终于赢了。"
+    let ch = ChapterSplitter.split(text, rules: ChapterRule.presets)
+    #expect(ch.map(\.title) == ["第一章 开始"])
+}
+@Test func leadingTableOfContentsIsDropped() {
+    let text = "第一章 甲\n第二章 乙\n第一章 甲\n正文甲\n第二章 乙\n正文乙"
+    let ch = ChapterSplitter.split(text, rules: ChapterRule.presets)
+    #expect(ch.map(\.title) == ["第一章 甲", "第二章 乙"])
+    #expect(ch.map(\.body) == ["正文甲", "正文乙"])
+}
+@Test func trailingHeadingKeepsItsEmptyChapter() {
+    let ch = ChapterSplitter.split("第一章 甲\n正文\n第二章 乙", rules: ChapterRule.presets)
+    #expect(ch.map(\.title) == ["第一章 甲", "第二章 乙"])
+    #expect(ch.map(\.body) == ["正文", ""])
+}
+@Test func volumeLinesOnlyFallBackToParts() {
+    let ch = ChapterSplitter.split("第一卷 风起\n第二卷 云涌", rules: ChapterRule.presets)
+    #expect(!ch.isEmpty)
+    #expect(ch.map(\.body).joined(separator: "\n") == "第一卷 风起\n第二卷 云涌")
+}
