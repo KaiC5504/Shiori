@@ -75,6 +75,12 @@ struct ShelfView: View {
             BookDetailView(bookId: route.bookId)
                 .modifier(ZoomOutOfCover(route: route, namespace: zoom))
         }
+        // A book's pages float their own buttons at the bottom, where the bar sits.
+        .onChange(of: detail != nil) { _, pushed in
+            withAnimation(Motion.animation(.spring(duration: 0.35, bounce: 0.1), reduced: reduced)) {
+                model.hidesBar = pushed
+            }
+        }
         .task(id: model.books.isEmpty) {
             guard !model.books.isEmpty, !revealSettled,
                   (try? await Task.sleep(for: .seconds(1))) != nil else { return }

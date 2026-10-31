@@ -47,7 +47,7 @@ struct RootView: View {
                         screen(for: tab)
                             .toolbar(.hidden, for: .navigationBar)
                     }
-                    .safeAreaPadding(.bottom, BarMetrics.contentBottomPadding)
+                    .safeAreaPadding(.bottom, model.hidesBar ? 0 : BarMetrics.contentBottomPadding)
                     .opacity(selected ? 1 : 0)
                     .allowsHitTesting(selected)
                     .accessibilityHidden(!selected)
@@ -59,8 +59,11 @@ struct RootView: View {
                         .padding(.horizontal, BarMetrics.horizontalInset)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
-                ShioriTabBar(selection: $model.selectedTab)
-                    .padding(.horizontal, BarMetrics.horizontalInset)
+                if !model.hidesBar {
+                    ShioriTabBar(selection: $model.selectedTab)
+                        .padding(.horizontal, BarMetrics.horizontalInset)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
             }
             // Down into the home indicator's band, as iOS's own floating tab bar sits; the gap
             // alone still applies on iPhones without one.

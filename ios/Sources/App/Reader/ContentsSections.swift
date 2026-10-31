@@ -19,7 +19,6 @@ struct ContentsSections: View {
     @Environment(\.motionReduced) private var reduced
     @Environment(\.accent) private var accent
     @Environment(\.locale) private var locale
-    @ScaledMetric(relativeTo: .footnote) private var digitWidth: CGFloat = 8
 
     init(chapters: [Chapter], current: Int?, query: String, reversed: Bool,
          onSelect: @escaping (Int) -> Void) {
@@ -132,11 +131,15 @@ struct ContentsSections: View {
             onSelect(index)
         } label: {
             HStack(alignment: .firstTextBaseline, spacing: 14) {
-                Text(verbatim: index < 9 ? "0\(index + 1)" : "\(index + 1)")
-                    .font(.system(.footnote, design: .monospaced))
-                    .foregroundStyle(isCurrent ? accent : Tokens.inkSecondary)
-                    .frame(width: digitWidth * CGFloat(max(2, String(chapters.count).count)),
-                           alignment: .leading)
+                // The widest number sets the column, so titles line up and numbers never wrap.
+                ZStack(alignment: .leading) {
+                    Text(verbatim: String(repeating: "0", count: max(2, String(chapters.count).count)))
+                        .hidden()
+                    Text(verbatim: index < 9 ? "0\(index + 1)" : "\(index + 1)")
+                }
+                .font(.system(.footnote, design: .monospaced))
+                .foregroundStyle(isCurrent ? accent : Tokens.inkSecondary)
+                .fixedSize()
                 VStack(alignment: .leading, spacing: 3) {
                     title(of: chapter, at: index, marking: inSearch ? query : nil)
                         .font(.body.weight(isCurrent ? .semibold : .regular))

@@ -24,6 +24,8 @@ final class AppModel {
     var openBook: Book?
     /// A 0-based chapter the next reader opened jumps to, instead of the saved place.
     var openChapter: Int?
+    /// True while a page that floats its own bottom buttons is pushed.
+    var hidesBar = false
     var toast: Toast?
 
     @ObservationIgnored private let defaults: UserDefaults
