@@ -24,6 +24,10 @@ enum DemoLaunch {
     /// A file on the simulator's host Mac, imported into whichever library is open, so a real
     /// book can be read in the simulator without the Files picker.
     static var importPath: String? { arguments.string(forKey: "DemoImportFile") }
+    /// The reader opens with its chrome showing.
+    static var showsChrome: Bool { arguments.bool(forKey: "DemoChrome") }
+    /// The reader opens with the Aa sheet up.
+    static var showsAppearance: Bool { arguments.bool(forKey: "DemoAppearance") }
 
     /// A 0-based chapter the reader jumps to once open, through the same path as Contents.
     static var jumpTo: Int? {
@@ -68,6 +72,9 @@ enum DemoLaunch {
     @MainActor static func apply(to model: AppModel) async {
         if let tab { model.selectedTab = tab }
         applySettings(to: model.settings)
+        if let theme = arguments.string(forKey: "DemoTheme").flatMap(ReaderTheme.init) {
+            model.readerPreferences.theme = theme
+        }
         let kept = keepsLibrary && !((try? model.database.bookList())?.isEmpty ?? true)
         if usesDemoData, !kept {
             let sources = model.paths.root.deletingLastPathComponent().appending(path: "Sources")

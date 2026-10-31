@@ -38,6 +38,9 @@ shoot 09-settings-en 8 -DemoTab settings -DemoLanguage en -AppleLanguages "(zh-H
 shoot 10-accent 8 -DemoTab settings -DemoSettingsPage accent -DemoAccent sealVermilion
 shoot 11-txt-settings 8 -DemoTab settings -DemoSettingsPage txt
 shoot 12-import-folder 12 -DemoTab imports -DemoWatchedFolder YES -DemoImportResults YES
+shoot 13-reader-chrome 12 -DemoTab shelf -DemoReader 1 -DemoChrome YES
+shoot 14-appearance 12 -DemoTab shelf -DemoReader 1 -DemoAppearance YES
+shoot 15-reader-parchment 12 -DemoTab shelf -DemoReader 1 -DemoTheme parchment
 
 xcrun simctl ui "$UDID" appearance dark
 shoot 04-shelf-dark 10 -DemoTab shelf -DemoUpdated YES
@@ -46,5 +49,6 @@ shoot 06-reader-dark 12 -DemoTab shelf -DemoReader 1
 shoot 08-icons-dark 8 -DemoIcons YES
 shoot 10-accent-dark 8 -DemoTab settings -DemoSettingsPage accent -DemoAccent sealVermilion
 shoot 12-import-folder-dark 12 -DemoTab imports -DemoWatchedFolder YES -DemoImportResults YES
+shoot 13-reader-chrome-dark 12 -DemoTab shelf -DemoReader 1 -DemoChrome YES -DemoTheme night
 xcrun simctl ui "$UDID" appearance light
 ls "$OUT"

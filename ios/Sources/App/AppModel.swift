@@ -9,6 +9,7 @@ final class AppModel {
     let database: LibraryDatabase
     let importer: BookImporter
     let settings: AppSettings
+    let readerPreferences: ReaderPreferences
     let watchedFolder: WatchedFolderModel
 
     var books: [BookListItem] = []
@@ -35,6 +36,7 @@ final class AppModel {
         self.defaults = defaults
         importer = BookImporter(database: database, paths: paths)
         settings = AppSettings(defaults: defaults)
+        readerPreferences = ReaderPreferences(defaults: defaults)
         importSettings = ImportSettings.load(from: defaults)
         watchedFolder = WatchedFolderModel(defaults: defaults,
                                            scanner: FolderScanner(database: database, importer: importer))

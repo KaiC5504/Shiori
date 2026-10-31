@@ -398,6 +398,22 @@
         }
       }
     },
+    "Follow appearance": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Follow appearance"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "跟随外观"
+          }
+        }
+      }
+    },
     "Found %lld new books": {
       "localizations": {
         "en": {
@@ -636,6 +652,38 @@
         }
       }
     },
+    "Light moss": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Light moss"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "浅苔"
+          }
+        }
+      }
+    },
+    "Milk": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Milk"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "奶白"
+          }
+        }
+      }
+    },
     "Mode": {
       "localizations": {
         "zh-Hans": {
@@ -682,6 +730,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "这个文件夹里的新书会自动导入。"
+          }
+        }
+      }
+    },
+    "Night": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Night"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "夜读"
           }
         }
       }
@@ -758,6 +822,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "PDF 阅读将在之后的版本中加入。"
+          }
+        }
+      }
+    },
+    "Parchment": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parchment"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "羊皮纸"
           }
         }
       }
@@ -1056,6 +1136,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "TXT 设置"
+          }
+        }
+      }
+    },
+    "Text size": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text size"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "字号"
           }
         }
       }
