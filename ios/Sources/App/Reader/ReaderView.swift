@@ -250,6 +250,8 @@ struct ReaderView: View {
     private func land(_ jump: ReaderJump, in reader: ReaderModel) async {
         try? await Task.sleep(for: .milliseconds(300))
         reader.finishJump(jump)
+        // A short drag that came to rest during the hold won't move viewID again, so catch it up.
+        if let anchor = position.viewID(type: ParagraphAnchor.self) { reader.visibleAnchorChanged(anchor) }
     }
 
     private func close() {
