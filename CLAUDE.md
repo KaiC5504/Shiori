@@ -64,7 +64,9 @@ minimum is iOS 26.
   minutes; add `libtests` and `uitests`, or run `all`. It pushes `dev` to the Mac only, never
   to GitHub. Setup and limits are in `tools/mac/README.md`.
 - Debug builds read demo launch arguments: `-DemoData YES`, `-DemoTab shelf|imports|settings`,
-  `-DemoReader <n>`, `-DemoContents YES`, `-DemoImportResults YES`. Every new screen gets
+  `-DemoReader <n>`, `-DemoContents YES`, `-DemoImportResults YES`, and since wave 3
+  `-DemoDetail <n>`, `-DemoContentsQuery <q>`, `-DemoImageViewer YES`, `-DemoPDF YES|thumbs`,
+  `-DemoLayout paged`, `-DemoEffect relay|curl`, `-DemoAppearancePage screen`. Every new screen gets
   a `shot` line in `tools/shots.sh` (shared by CI and the Mac), in light and in dark where
   it matters.
 

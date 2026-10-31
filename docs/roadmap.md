@@ -94,9 +94,11 @@ folder updates the existing book ("Updated: +N chapters"), with progress intact.
 
 ## M4a: Reader engine
 
-**Deferred.** Wave 2 was re-scoped to what KaiC needs to read daily: the shelf and reader
-comfort (build 4, below). The Core Text paginator (wave 1's C1) is built and tested but
-unused until paged mode lands here.
+**Mostly done in TestFlight build 5 (wave 3):** the paged layout on the Core Text paginator,
+with Apple's curl (the default, KaiC's pick after seeing relay) and paragraph relay at three
+speeds; position kept as (chapter, offset) across size changes, layout switches and reopening.
+Reading sessions are recorded from build 5. Left: the 300 ms open measured on device.
+Plan: `docs/superpowers/plans/2026-11-01-wave-3.md`.
 
 - **Text engine:** the content model, lazy per-chapter pagination with a cache, and
   positions stored as (chapter key, offset) (§7.3).
@@ -115,6 +117,12 @@ size keeps his place.
 info line), the five paper themes with Day/Night, full typography for scroll mode, and
 Apple's downloadable fonts. The rest of this milestone is still to come.
 
+**More in TestFlight build 5 (wave 3):** tap zones (three layouts, both sides forward), the
+brightness edge and slider, keep awake, status bar and battery options; contents with folding
+volumes, chapter-number search and reverse order; inline illustrations with the zoom viewer
+and Save to Photos; the PDF reader. Left: Find, Notes, custom backgrounds, imported fonts,
+rotation, the volume illustration grid.
+
 - **Themes and screen:** paper themes and a custom background (§7.5), screen options,
   brightness, keep awake, rotation with a lock.
 - **Chrome (§7.7):** top bar, chapter slider, tool dock, info strip.
@@ -132,6 +140,10 @@ phone.
 
 **M5a in TestFlight build 4 (wave 2):** the 3D spine carousel prototype, for look
 approval against the reference recordings.
+
+**Part of M5b in TestFlight build 5 (wave 3):** the Continue card, the book detail page with
+its zoom from the cover, the author's books, "Open book directly", and the ribbon moved to
+hang below the last-read book.
 
 - **M5a, look approval:** a prototype of the 3D spine carousel (§6.2) ships alone, to be
   checked against the reference recordings. Polish waits for KaiC's OK.
