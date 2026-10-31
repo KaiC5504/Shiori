@@ -107,12 +107,16 @@ they must keep the same character.
 
 | Token | Light | Dark |
 | --- | --- | --- |
-| `paper` (page background) | `#F2ECE3` | `#1C1B20` |
-| `surface` (cards, rows) | `#FBF8F3` | `#26252B` |
-| `line` (hairlines, tracks) | `#DDD5CA` | `#34323A` |
-| `ink` (text) | `#24222A` | `#F2ECE3` |
-| `inkSecondary` | `#6F6A66` | `#9C978F` |
+| `paper` (page background) | `#F2ECE3` | `#1F1F1F` |
+| `surface` (cards, rows) | `#FBF8F3` | `#262626` |
+| `line` (hairlines, tracks) | `#DDD5CA` | `#343434` |
+| `ink` (text) | `#24222A` | `#EDEDED` |
+| `inkSecondary` | `#6F6A66` | `#8F8F8F` |
 | `ribbon` (brand only) | `#7650C9` | `#B79CF2` |
+
+**Dark mode** is neutral charcoal with no tint, like the old app. KaiC picked it from the
+concept samples (`docs/design/concepts/4-tones.png`, option A). **Default appearance**
+follows the phone; Settings and the guide can pin Light or Dark.
 
 **Accent.** The default accent is **Ink**: monochrome, so controls, progress and
 selection use the ink colour. The icon's ribbon violet is a brand touch only. It appears
@@ -124,7 +128,7 @@ Accent choices in Settings, each a light/dark pair:
 
 | Name | Light | Dark |
 | --- | --- | --- |
-| Ink (default) | `#24222A` | `#F2ECE3` |
+| Ink (default) | `#24222A` | `#EDEDED` |
 | Iris | `#6E6190` | `#B3A8CC` |
 | Seal vermilion | `#A9402B` | `#E58A6F` |
 | Indigo | `#2E4A78` | `#94AEDA` |
@@ -148,6 +152,16 @@ variant and says so.
 - **Masthead:** every top-level screen opens with a small monospace code line, e.g.
   `01 / SHELF`, `02 / IMPORT`, `03 / SETTINGS`, then the localised large title. The code
   line stays Latin in both languages; it is a design element.
+- **Archive codes:** KaiC chose to keep the old app's archive flavour, made Shiori's own:
+  - **Section labels:** a monospace, letter-spaced label ("COLLECTION / SHELF"), then a
+    hairline rule ending in a small square dot, then a bold section title.
+  - **Serials:** each book gets a short serial, `SH-` plus six digits, stable per book
+    and derived from its id. It shows above the title in list rows and on generated
+    covers.
+  - **Spine numbers:** 3D shelf books carry `NO.001` style numbers by shelf position.
+- **Grid:** a very faint 100 pt square grid sits behind the headers, like drafting paper,
+  and fades out under the content.
+- **Reference:** `docs/design/concepts/` holds the concept sheets KaiC chose from.
 
 ### 4.4 Glass
 
@@ -219,7 +233,8 @@ KaiC wants the full width.
   call: exact bottom gap; the old app used about 12 pt above the safe area.)**
 - **Size:** 64 pt tall, capsule-shaped, Liquid Glass tinted with paper.
 - **Lanes:** three equal lanes. Each holds a custom icon (24 pt) over a label (11 pt).
-- **Selection:** a glass lens sits behind the selected lane. Tapping a lane springs the
+- **Selection:** a glass lens sits behind the selected lane (KaiC chose this over a dash
+  or an icon pill; `docs/design/concepts/2-bar.png`, option A). Tapping a lane springs the
   lens to it. Dragging along the bar moves the lens with the finger and selects on
   release. The selected icon plays its `activity` animation.
 - **Content:** screens scroll under the bar, with enough bottom padding that the last row
@@ -258,11 +273,22 @@ the top: cover, title, current chapter, progress percentage and a Continue butto
 
 ### 6.1 Header
 
-The header has the masthead `01 / SHELF` and the large title, plus three glass buttons:
-**Search**, **History**, and **View**. View switches between "3D shelf + list" and
-"3D shelf + grid", sets the grid size (small, medium, large), and sets sort and grouping.
+The header has the large title and the masthead `01 / SHELF`, plus two round
+glass buttons: **History** and **Search**. There is no import button here; import lives
+in its tab and in the empty shelf.
+
+Under each section label, a filter row holds:
+
+- a category pill (All books, a category, Uncategorised, By author), which opens a sheet
+- the book count
+- a **Filter** button (shelf filter, sort, grouping)
+- a **Layout** button that switches between "3D shelf + list" and "3D shelf + grid" and
+  sets the grid size (small, medium, large)
 
 ### 6.2 The 3D spine shelf
+
+KaiC chose the spine wave over a single featured book or a cover carousel
+(`docs/design/concepts/1-shelf.png`, option B).
 
 Books stand in a row as solid 3D blocks, seen slightly from above and in front, so you
 see their spines and top edges. The row scrolls sideways and snaps book by book. The
@@ -607,9 +633,12 @@ Shiori **updates it in place** rather than adding a second copy:
 
 The tab's masthead is `03 / SETTINGS`.
 
+The layout is a summary header followed by compact grouped rows that change in place,
+with deeper pages one tap away. KaiC chose it from the samples
+(`docs/design/concepts/3-settings.png`, option B).
+
 1. **Reading summary header.** Today's minutes, the current streak and this week's mini
-   bars. Tapping it opens Stats. **(planner's call, made at KaiC's request: a live
-   header beats a plain list for everyday use, and keeps Stats one tap away.)**
+   bars. Tapping it opens Stats.
 2. **Bookmarks and notes**, which opens the library (§7.9).
 3. **General:**
    - Language (中文 / English), which switches instantly

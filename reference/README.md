@@ -8,7 +8,26 @@ written from `docs/`, never from the old app's source.
 The images stay on this PC. `reference/screens/` is gitignored because the screenshots
 show real book covers, which are not ours to publish.
 
-## Shots to capture
+## What's here (2026-10-31)
+
+KaiC sent concept references rather than the full list, which is fine: Shiori takes the
+ideas, not a copy. All are in dark mode.
+
+| File | Shows |
+| --- | --- |
+| `01-shelf-3d-dark.png` | The 3D shelf with one book, header buttons, filter row |
+| `02-shelf-list-dark.png` | List rows with serial codes, generated covers, status |
+| `03-shelf-grid-dark.png` | The cover grid |
+| `04-shelf-grid-scrolled-dark.png` | The header compressing while scrolling, with a blurred status bar |
+| `05-shelf-categories-sheet-dark.png` | The category sheet (all, uncategorised, by author, new) |
+| `18-me-dark.png` | The old 我的 page cards |
+| `19-settings-dark.png` | The old settings cards |
+| `19b-settings-effects-dark.png` | A settings sub-page with sliders (that page itself is cut) |
+| `21-stats-dark.png` | Stats overview: big numerals, a highlight card, a section bar |
+
+The reader has no screenshots. The spec (§7) describes it in words.
+
+## Original capture list
 
 Name each file with its number, e.g. `03-detail.png`. Light mode unless the name says dark.
 

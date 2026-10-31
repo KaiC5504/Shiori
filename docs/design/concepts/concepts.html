@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>Shiori concepts</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#121212;font-family:"Microsoft YaHei UI","PingFang SC","Segoe UI",sans-serif;color:#EDEDED}
+.sheet{padding:28px;width:max-content}
+.sheet h1{font-size:26px;font-weight:700;margin:0 0 4px;color:#fff}
+.sheet p.note{font-size:15px;color:#A8A8A8;margin:0 0 20px;max-width:1340px;line-height:1.45}
+.row{display:flex;gap:28px;align-items:flex-start}
+.opt{display:flex;flex-direction:column;gap:10px}
+.opt .tag{font-size:18px;font-weight:700;color:#fff}
+.opt .tag span{font-weight:400;color:#A8A8A8;font-size:14px;margin-left:8px}
+.phone{width:440px;height:956px;border-radius:54px;position:relative;overflow:hidden;
+  --bg:#1F1F1F;--surf:#262626;--line:#343434;--ink:#EDEDED;--sub:#8F8F8F;--btn:#3A3A3A;
+  background:var(--bg);color:var(--ink);border:1px solid #333}
+.phone.light{--bg:#F2ECE3;--surf:#FBF8F3;--line:#DDD5CA;--ink:#24222A;--sub:#6F6A66;--btn:#E4DDD2;border-color:#ccc}
+.phone.warm{--bg:#1C1B20;--surf:#26252B;--line:#34323A;--ink:#F2ECE3;--sub:#9C978F;--btn:#36343C}
+.phone.oled{--bg:#0A0A0B;--surf:#151516;--line:#262628;--ink:#EDEDED;--sub:#8A8A8A;--btn:#2A2A2C}
+.grid-bg{position:absolute;inset:0;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:100px 100px;opacity:.28;pointer-events:none}
+.status{height:54px;display:flex;justify-content:space-between;align-items:center;padding:14px 34px 0 46px;font-weight:600;font-size:16px}
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;padding:12px 24px 0}
+.big{font-size:40px;font-weight:800;letter-spacing:1px;line-height:1.1}
+.lbl{font-family:Consolas,monospace;font-size:11px;letter-spacing:2.4px;color:var(--sub);margin-top:6px;text-transform:uppercase}
+.btns{display:flex;gap:6px}
+.gb{width:46px;height:46px;border-radius:50%;background:var(--btn);display:flex;align-items:center;justify-content:center}
+.sec{display:flex;align-items:center;gap:10px;padding:22px 24px 0;font-family:Consolas,monospace;font-size:11px;letter-spacing:2.4px;color:var(--sub)}
+.sec i{flex:1;height:1px;background:var(--line)}
+.sec b{width:4px;height:4px;background:var(--ink)}
+.h2{font-size:28px;font-weight:800;padding:8px 24px 0}
+.tools{display:flex;gap:8px;align-items:center;padding:14px 24px 0}
+.pill{flex:1;height:42px;border-radius:21px;background:var(--btn);display:flex;align-items:center;gap:10px;padding:0 16px;font-size:16px;font-weight:600}
+.cnt{font-size:15px;color:var(--sub);padding:0 6px}
+.rowb{display:flex;gap:14px;padding:16px 24px;border-bottom:1px solid var(--line);align-items:center}
+.cov{width:52px;height:72px;border-radius:3px;flex:none;position:relative;padding:6px;font-size:9px;font-weight:700;line-height:1.2;color:#fff;overflow:hidden}
+.ser{font-family:Consolas,monospace;font-size:11px;letter-spacing:1.6px;color:var(--sub)}
+.tt{font-size:18px;font-weight:700;margin-top:3px}
+.au{font-size:13px;color:var(--sub);margin-top:3px}
+.prog{height:2px;background:var(--line);margin-top:8px;border-radius:1px}
+.prog i{display:block;height:2px;background:var(--ink)}
+.stat{margin-left:auto;font-size:13px;color:var(--sub);text-align:right;flex:none}
+.bar{position:absolute;left:16px;right:16px;bottom:30px;height:64px;border-radius:32px;display:flex;align-items:center;
+  background:color-mix(in srgb,var(--btn) 82%,transparent);backdrop-filter:blur(14px);border:1px solid color-mix(in srgb,var(--ink) 10%,transparent)}
+.lane{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--sub);position:relative;z-index:1}
+.lane.on{color:var(--ink);font-weight:700}
+.lens{position:absolute;top:5px;bottom:5px;border-radius:27px;background:color-mix(in srgb,var(--ink) 13%,transparent);border:1px solid color-mix(in srgb,var(--ink) 18%,transparent)}
+.home{position:absolute;bottom:8px;left:50%;width:140px;height:5px;margin-left:-70px;border-radius:3px;background:var(--ink);opacity:.8}
+.fade{position:absolute;left:0;right:0;bottom:0;height:150px;background:linear-gradient(transparent,var(--bg) 70%)}
+/* 3D */
+.stage{height:380px;position:relative;perspective:1100px;display:flex;align-items:center;justify-content:center}
+.box{position:relative;transform-style:preserve-3d}
+.face{position:absolute;left:0;top:0}
+.spinev{writing-mode:vertical-rl;font-size:11px;font-weight:700;letter-spacing:2px}
+.shadow{position:absolute;bottom:36px;left:50%;width:240px;height:26px;margin-left:-120px;background:radial-gradient(ellipse,rgba(0,0,0,.55),transparent 70%)}
+.cap{padding:0 24px}
+/* settings */
+.card{margin:12px 24px 0;border:1px solid var(--line);border-radius:6px;background:var(--surf);padding:16px 18px;display:flex;gap:14px;align-items:center}
+.card .ct{font-size:18px;font-weight:700}
+.card .cs{font-size:13px;color:var(--sub);margin-top:4px}
+.chev{margin-left:auto;color:var(--sub);font-size:18px}
+.glist{margin:10px 24px 0;border-radius:8px;background:var(--surf);border:1px solid var(--line)}
+.gi{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line);font-size:15px}
+.gi:last-child{border-bottom:0}
+.gi .v{margin-left:auto;color:var(--sub);font-size:14px}
+.ghead{font-family:Consolas,monospace;font-size:11px;letter-spacing:2.4px;color:var(--sub);padding:18px 28px 0}
+.sum{margin:16px 24px 0;border:1px solid var(--line);border-radius:8px;padding:18px;background:var(--surf);position:relative}
+.sum .n{font-size:44px;font-weight:800;line-height:1}
+.sum .u{font-size:15px;color:var(--sub);margin-left:6px}
+.wk{display:flex;gap:7px;align-items:flex-end;height:46px;margin-top:14px}
+.wk i{flex:1;background:var(--ink);opacity:.85;border-radius:2px}
+.wk i.o{opacity:.22}
+</style>
+</head>
+<body>
+
+<section class="sheet" id="s1">
+<h1>1 · 3D shelf: which idea?</h1>
+<p class="note">All three use the archive header, the code labels, the round header buttons and the full-width bar. A is closest to the old app: one big book at a time. B is the spec's spine wave: a row of spines with the centre book pulled out. C is a cover carousel with no spines. Covers are Shiori's generated typographic covers; real books show their own art.</p>
+<div class="row" id="shelves"></div>
+</section>
+
+<section class="sheet" id="s2">
+<h1>2 · Bottom bar: which selection style?</h1>
+<p class="note">All full width (16 pt from the edges), with the same three tabs. A: a glass lens slides behind the selected tab (the spec). B: like the old app, a small dash under the selected label. C: icons only, and the selected tab widens into a pill with its label.</p>
+<div class="row" id="bars"></div>
+</section>
+
+<section class="sheet" id="s3">
+<h1>3 · Settings tab: which layout?</h1>
+<p class="note">A keeps the old app's big outlined cards that open sub-pages. B opens with the reading summary (planned in the spec), then compact grouped rows you can change in place. C mixes them: the summary on top, then the big cards.</p>
+<div class="row" id="settings"></div>
+</section>
+
+<section class="sheet" id="s4">
+<h1>4 · Colours: which dark mode, and is dark the default?</h1>
+<p class="note">Your screenshots are all dark. A: neutral charcoal like the old app. B: warm ink, very slightly violet to echo the icon (the spec's current value). C: true black for OLED. D: the light paper theme, for comparison.</p>
+<div class="row" id="tones"></div>
+</section>
+
+<script>
+const books=[
+ {t:'全民转职：死灵法师！我即是天灾',a:'慢途的猪',c:'#3B2F4A',p:62,s:'第 2,420 章'},
+ {t:'桃花源记',a:'陶渊明',c:'#3F5A4E',p:100,s:'已读完'},
+ {t:'岳阳楼记',a:'范仲淹',c:'#5A4630',p:0,s:'未读'},
+ {t:'兰亭集序',a:'王羲之',c:'#2E3F5C',p:18,s:'第 3 章'},
+ {t:'赤壁赋',a:'苏轼',c:'#5C2E33',p:0,s:'未读'},
+ {t:'滕王阁序',a:'王勃',c:'#4A4A2E',p:40,s:'第 1 章'},
+ {t:'出师表',a:'诸葛亮',c:'#33404A',p:0,s:'未读'}];
+const ico={
+ clock:c=>`<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="${c}" stroke-width="1.6"><circle cx="10" cy="10" r="7.5"/><path d="M10 5.5V10l3 2"/></svg>`,
+ search:c=>`<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="${c}" stroke-width="1.6"><circle cx="9" cy="9" r="5.5"/><path d="M13 13l4 4"/></svg>`,
+ layout:c=>`<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="${c}" stroke-width="1.6"><rect x="3" y="3" width="6" height="14" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="11" y="11" width="6" height="6" rx="1"/></svg>`,
+ filter:c=>`<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="${c}" stroke-width="1.6"><path d="M3 6h14M3 14h14"/><circle cx="7" cy="6" r="2" fill="var(--btn)"/><circle cx="13" cy="14" r="2" fill="var(--btn)"/></svg>`,
+ folder:c=>`<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="${c}" stroke-width="1.6"><path d="M2.5 6V15.5h15V7.5H9L7.5 5h-5z"/></svg>`,
+ shelf:c=>`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="1.6"><path d="M2.5 21h19"/><rect x="4" y="6" width="4.5" height="14"/><rect x="10" y="3.5" width="4.5" height="16.5"/><path d="M16.5 7.5l3.5-1 3 13-3.5 1z"/></svg>`,
+ imp:c=>`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="1.6"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M12 10v7M9 14l3 3 3-3"/></svg>`,
+ set:c=>`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="1.6"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M8 8h8M8 12h8M8 16h8"/><circle cx="10" cy="8" r="1.6" fill="var(--btn)"/><circle cx="15" cy="12" r="1.6" fill="var(--btn)"/><circle cx="11" cy="16" r="1.6" fill="var(--btn)"/></svg>`,
+ chart:c=>`<svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="${c}" stroke-width="1.6"><rect x="3" y="11" width="3.5" height="8"/><rect x="9.2" y="6" width="3.5" height="13"/><rect x="15.4" y="9" width="3.5" height="10"/></svg>`,
+ mark:c=>`<svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="${c}" stroke-width="1.6"><path d="M5 3h12v16l-6-4-6 4z"/></svg>`,
+ type:c=>`<svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="${c}" stroke-width="1.6"><path d="M3 5h10M8 5v13M14 11h5M16.5 11v7"/></svg>`,
+ head:c=>`<svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="${c}" stroke-width="1.6"><path d="M4 13a7 7 0 0 1 14 0"/><rect x="3" y="12" width="4" height="6" rx="1"/><rect x="15" y="12" width="4" height="6" rx="1"/></svg>`,
+ box:c=>`<svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="${c}" stroke-width="1.6"><path d="M3 7l8-4 8 4v9l-8 4-8-4z"/><path d="M3 7l8 4 8-4M11 11v9"/></svg>`,
+ info:c=>`<svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="${c}" stroke-width="1.6"><circle cx="11" cy="11" r="8"/><path d="M11 10v5M11 7v.5"/></svg>`};
+const V=v=>`var(--${v})`;
+const status=()=>`<div class="status"><span>9:41</span><span style="font-size:13px">●●● ᯤ ▮▮▮</span></div>`;
+const header=(title,code,btns=['clock','imp','search'])=>`<div class="hdr"><div><div class="big">${title}</div><div class="lbl">${code}</div></div><div class="btns">${btns.map(b=>`<span class="gb">${(ico[b]||ico.clock)(V('ink')).replace('width="24" height="24"','width="20" height="20"')}</span>`).join('')}</div></div>`;
+const sec=t=>`<div class="sec"><span>${t}</span><i></i><b></b></div>`;
+const tools=(label,n)=>`<div class="tools"><div class="pill">${ico.folder(V('ink'))}${label}<span style="margin-left:auto;color:var(--sub)">⌄</span></div><span class="cnt">${n} 本</span><span class="gb" style="width:42px;height:42px">${ico.filter(V('ink'))}</span><span class="gb" style="width:42px;height:42px">${ico.layout(V('ink'))}</span></div>`;
+const cover=(b,w,h,fs=12)=>`<div style="width:${w}px;height:${h}px;background:${b.c};position:relative;padding:${w*.09}px;color:#F4EFE8;overflow:hidden">
+ <div style="font-family:Consolas,monospace;font-size:${Math.max(8,fs*.62)}px;letter-spacing:1.5px;opacity:.7">NO.00${books.indexOf(b)+1}</div>
+ <div style="height:1px;background:#F4EFE8;opacity:.35;margin:${h*.05}px 0"></div>
+ <div style="font-size:${fs}px;font-weight:800;line-height:1.25">${b.t}</div>
+ <div style="position:absolute;left:${w*.09}px;bottom:${h*.07}px;font-size:${fs*.75}px;opacity:.8">${b.a}</div>
+ <div style="position:absolute;right:${w*.09}px;bottom:${h*.07}px;font-family:Consolas,monospace;font-size:${Math.max(7,fs*.55)}px;opacity:.6">SH-${(2081613654+books.indexOf(b)*7919).toString().slice(0,6)}</div></div>`;
+const bookBox=(b,w,h,d,rx,ry)=>`<div class="box" style="width:${w}px;height:${h}px;transform:rotateX(${rx}deg) rotateY(${ry}deg)">
+ <div class="face" style="transform:translateZ(${d/2}px)">${cover(b,w,h,w/9)}</div>
+ <div class="face" style="left:${-d/2}px;width:${d}px;height:${h}px;background:color-mix(in srgb,${b.c} 62%,#000);transform:rotateY(-90deg);display:flex;align-items:center;justify-content:center;color:#EDE6DC;flex-direction:column;gap:8px"><span style="font-family:Consolas,monospace;font-size:10px">01</span><span class="spinev">${b.t.slice(0,9)}</span></div>
+ <div class="face" style="top:${-d/2}px;width:${w}px;height:${d}px;background:color-mix(in srgb,${b.c} 50%,#bbb);transform:rotateX(90deg)"></div></div>`;
+const bar=(style,on=0)=>{
+ const lanes=[['shelf','书架'],['imp','导入'],['set','设置']];
+ if(style==='C'){return `<div class="bar" style="padding:0 10px;gap:6px">${lanes.map(([i,l],k)=>k===on?`<div style="flex:2;height:48px;border-radius:24px;background:color-mix(in srgb,var(--ink) 14%,transparent);display:flex;align-items:center;justify-content:center;gap:8px;font-weight:700;font-size:15px">${ico[i](V('ink'))}${l}</div>`:`<div style="flex:1;display:flex;justify-content:center">${ico[i](V('sub'))}</div>`).join('')}</div>`}
+ const lens=style==='A'?`<div class="lens" style="left:calc(${on*33.33}% + 5px);width:calc(33.33% - 10px)"></div>`:'';
+ return `<div class="bar">${lens}${lanes.map(([i,l],k)=>`<div class="lane ${k===on?'on':''}">${ico[i](k===on?V('ink'):V('sub'))}<span>${l}</span>${style==='B'&&k===on?'<i style="display:block;width:14px;height:2px;background:var(--ink);margin-top:2px"></i>':''}</div>`).join('')}</div>`};
+const rows=(n=3)=>books.slice(0,n).map((b,i)=>`<div class="rowb"><div class="cov" style="background:${b.c}">${b.t.slice(0,6)}</div><div style="min-width:0;flex:1"><div class="ser">SH-${(2081613654+i*7919).toString().slice(0,6)}</div><div class="tt">${b.t.length>12?b.t.slice(0,12)+'…':b.t}</div><div class="au">${b.a}</div><div class="prog"><i style="width:${b.p}%"></i></div></div><div class="stat">${b.s}</div></div>`).join('');
+const phone=(cls,inner,barStyle='A',on=0)=>`<div class="phone ${cls}"><div class="grid-bg"></div><div style="position:relative">${status()}${inner}</div><div class="fade"></div>${bar(barStyle,on)}<div class="home"></div></div>`;
+
+const shelfA=`${header('书架','01 / SHIORI ARCHIVE')}${sec('COLLECTION / SHELF')}<div class="h2">立体书架</div>${tools('全部书籍',7)}
+<div class="stage"><div class="shadow"></div>${bookBox(books[0],170,240,34,-14,32)}</div>
+<div class="cap"><div style="font-size:22px;font-weight:800">${books[0].t}</div><div class="au" style="font-size:15px;display:flex">慢途的猪 · 第 2,420 章 · 62%<span style="margin-left:auto">↗</span></div></div>${sec('COLLECTION / LIST')}`;
+
+const spines=books.map((b,i)=>{const k=i-3;if(k===0)return '';const x=k*34+(k>0?62:-62);const lift=Math.abs(k)===1?-10:0;return `<div style="position:absolute;left:50%;bottom:70px;transform:translateX(${x-14}px) translateY(${lift}px)"><div style="width:28px;height:${200+((i*37)%40)}px;background:color-mix(in srgb,${b.c} 75%,#000);border-left:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;color:#E9E2D8;position:relative"><span class="spinev" style="font-size:10px">${b.t.slice(0,8)}</span><div style="position:absolute;top:-8px;left:0;width:28px;height:8px;background:color-mix(in srgb,${b.c} 45%,#ccc);transform:skewX(-40deg);transform-origin:bottom"></div></div></div>`}).join('');
+const shelfB=`${header('书架','01 / SHIORI ARCHIVE')}${sec('COLLECTION / SHELF')}<div class="h2">立体书架</div>${tools('全部书籍',7)}
+<div class="stage" style="height:380px">${spines}<div style="position:absolute;left:24px;right:24px;bottom:66px;height:3px;background:var(--line)"></div>
+<div style="position:absolute;left:50%;bottom:58px;margin-left:-74px;z-index:2;filter:drop-shadow(0 18px 18px rgba(0,0,0,.5))">${bookBox(books[0],148,214,26,-10,22)}<div style="position:absolute;top:-6px;right:16px;width:10px;height:44px;background:#7650C9;clip-path:polygon(0 0,100% 0,100% 100%,50% 82%,0 100%)"></div></div></div>
+<div class="cap"><div style="font-size:22px;font-weight:800">${books[0].t}</div><div class="au" style="font-size:15px;display:flex">慢途的猪 · 第 2,420 章 · 62%<span style="margin-left:auto">↗</span></div></div>${sec('COLLECTION / LIST')}`;
+
+const deck=[-2,-1,1,2,0].map(k=>{const b=books[k+2];const rot=k===0?0:(k<0?52:-52);const x=k*(k===0?0:1)*78+(k>0?40:k<0?-40:0);return `<div style="position:absolute;left:50%;top:40px;margin-left:-80px;transform:translateX(${x}px) rotateY(${rot}deg) scale(${k===0?1:.86});z-index:${10-Math.abs(k)};filter:brightness(${k===0?1:.62}) drop-shadow(0 16px 16px rgba(0,0,0,.45))">${cover(b,160,228,17)}</div>`}).join('');
+const shelfC=`${header('书架','01 / SHIORI ARCHIVE')}${sec('COLLECTION / SHELF')}<div class="h2">封面画廊</div>${tools('全部书籍',7)}
+<div class="stage" style="perspective:900px;display:block">${deck}<div style="position:absolute;bottom:22px;left:0;right:0;display:flex;justify-content:center;gap:6px">${[0,1,2,3,4].map(i=>`<i style="width:${i===2?16:5}px;height:5px;border-radius:3px;background:var(--ink);opacity:${i===2?1:.3}"></i>`).join('')}</div></div>
+<div class="cap" style="text-align:center"><div style="font-size:22px;font-weight:800">${books[2].t}</div><div class="au" style="font-size:15px">范仲淹 · 未读</div></div>${sec('COLLECTION / LIST')}`;
+
+document.getElementById('shelves').innerHTML=[['A','One featured book',shelfA],['B','Spine wave (spec)',shelfB],['C','Cover carousel',shelfC]].map(([k,n,h])=>`<div class="opt"><div class="tag">${k}<span>${n}</span></div>${phone('',h,'A')}</div>`).join('');
+
+const listScreen=`${header('书架','01 / SHIORI ARCHIVE')}${sec('COLLECTION / LIST')}<div class="h2">图书列表</div>${tools('全部书籍',7)}${rows(5)}`;
+const barCrop=(cls,s)=>`<div class="phone ${cls}" style="height:300px;border-radius:0 0 54px 54px"><div class="grid-bg"></div><div style="position:relative;margin-top:-20px">${rows(3)}</div><div class="fade"></div>${bar(s,0)}<div class="home"></div></div>`;
+document.getElementById('bars').innerHTML=[['A','Glass lens (spec)'],['B','Dash under label'],['C','Icon row, label pill']].map(([k,n])=>`<div class="opt"><div class="tag">${k}<span>${n}</span></div>${barCrop('',k)}${barCrop('light',k)}</div>`).join('');
+
+const sHead=header('设置','03 / SYSTEM PREFERENCES',[]);
+const cardsHTML=[['type','阅读与外观','排版、主题、字体与翻页'],['head','听书','语音、语速与定时'],['imp','导入','监视文件夹与 TXT 规则'],['box','数据与存储','阅读历史与缓存'],['info','关于','版本 1.0 · 许可']].map(([i,t,s])=>`<div class="card">${ico[i](V('ink'))}<div><div class="ct">${t}</div><div class="cs">${s}</div></div><span class="chev">›</span></div>`).join('');
+const summary=`<div class="sum"><div class="ser">TODAY / READING</div><div style="display:flex;align-items:baseline;margin-top:8px"><span class="n">42</span><span class="u">分钟</span><span style="margin-left:auto;text-align:right;font-size:13px;color:var(--sub)">连续 <b style="color:var(--ink);font-size:20px">6</b> 天</span></div><div class="wk">${[30,55,20,70,45,90,60].map((h,i)=>`<i class="${i>5?'o':''}" style="height:${h}%"></i>`).join('')}</div><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--sub);margin-top:6px;font-family:Consolas,monospace">${'一二三四五六日'.split('').map(d=>`<span>${d}</span>`).join('')}</div><span class="chev" style="position:absolute;right:16px;top:16px">›</span></div>`;
+const setA=`${sHead}${sec('PREFERENCES / ALL')}<div style="height:6px"></div><div class="card">${ico.chart(V('ink'))}<div><div class="ct">统计</div><div class="cs">阅读记录与连续天数</div></div><span class="chev">›</span></div><div class="card">${ico.mark(V('ink'))}<div><div class="ct">书签与笔记</div><div class="cs">收藏的句子与位置</div></div><span class="chev">›</span></div>${cardsHTML}`;
+const gl=(h,items)=>`<div class="ghead">${h}</div><div class="glist">${items.map(([t,v])=>`<div class="gi">${t}<span class="v">${v}</span></div>`).join('')}</div>`;
+const setB=`${sHead}${summary}<div class="glist" style="margin-top:12px"><div class="gi">${ico.mark(V('ink'))}书签与笔记<span class="v">128 ›</span></div></div>${gl('GENERAL / 通用',[['语言','中文 ›'],['点书直接阅读','<span style="display:inline-block;width:40px;height:24px;border-radius:12px;background:var(--ink);opacity:.9"></span>'],['触感反馈','开 ›']])}${gl('APPEARANCE / 外观',[['外观模式','跟随系统 ›'],['强调色','墨色 ›']])}${gl('READING / 阅读',[['默认排版','›'],['翻页效果','段落接续 ›']])}`;
+const setC=`${sHead}${summary}${cardsHTML}`;
+document.getElementById('settings').innerHTML=[['A','Big cards (old style)',setA],['B','Summary + grouped rows',setB],['C','Summary + big cards',setC]].map(([k,n,h])=>`<div class="opt"><div class="tag">${k}<span>${n}</span></div>${phone('',h,'A',2)}</div>`).join('');
+
+document.getElementById('tones').innerHTML=[['A','Neutral charcoal','', '#1F1F1F'],['B','Warm ink (spec)','warm','#1C1B20'],['C','True black','oled','#0A0A0B'],['D','Light paper','light','#F2ECE3']].map(([k,n,c,hex])=>`<div class="opt"><div class="tag">${k}<span>${n} · ${hex}</span></div>${phone(c,listScreen,'A')}</div>`).join('');
+</script>
+</body>
+</html>
