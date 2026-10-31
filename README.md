@@ -6,7 +6,8 @@ Shiori reads your own EPUB, TXT and PDF files: there is no catalogue, no account
 server. It is built for long Chinese web novels (thousands of chapters) and tuned for the
 iPhone 17 Pro Max.
 
-**Status:** planning is done and M1 (the first TestFlight build) is next. See
+**Status:** M1 shipped as TestFlight build 1: import EPUB and TXT, a plain shelf, and a
+scroll reader that remembers your place. M2 (the look) is next. See
 [the roadmap](docs/roadmap.md).
 
 ## Planned

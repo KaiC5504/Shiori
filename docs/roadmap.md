@@ -21,6 +21,9 @@ Rough sizes are relative, not dates.
 
 ## M1: Thin slice, end to end (TestFlight 1)
 
+**Done 2026-10-31: TestFlight build 1** (version 0.1.0). The phone check of the "done
+when" below is KaiC's.
+
 The whole loop works, ugly bits allowed.
 
 - **Pipeline:** repo, XcodeGen project, compile check with screenshots, TestFlight
