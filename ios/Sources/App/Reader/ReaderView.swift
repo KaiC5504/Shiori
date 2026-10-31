@@ -533,6 +533,9 @@ struct ReaderView: View {
             position.scrollTo(id: top, anchor: .top)
             // Marks the paragraph as where the reader is rather than where to scroll.
             position.isPositionedByUser = true
+            // Pinning doesn't report a new viewID, so the place is handed over here to be saved.
+            reader.visibleAnchorChanged(top)
+            tracker?.ping(chapterIndex: top.chapter)
         }
         reader.scrollPhaseChanged(isScrolling: scroll.phase != .idle)
     }
