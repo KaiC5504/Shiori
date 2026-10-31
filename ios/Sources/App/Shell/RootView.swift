@@ -7,6 +7,7 @@ struct RootView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.locale) private var systemLocale
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
+    @State private var bottomInset: CGFloat = 0
 
     var body: some View {
         let settings = model.settings
@@ -61,8 +62,12 @@ struct RootView: View {
                 ShioriTabBar(selection: $model.selectedTab)
                     .padding(.horizontal, BarMetrics.horizontalInset)
             }
-            .padding(.bottom, BarMetrics.bottomGap)
+            // Down into the home indicator's band, as iOS's own floating tab bar sits; the gap
+            // alone still applies on iPhones without one.
+            .padding(.bottom, max(bottomInset - 14, BarMetrics.bottomGap))
+            .ignoresSafeArea(.container, edges: .bottom)
         }
+        .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.bottom } action: { bottomInset = $0 }
         .background(Tokens.paper.ignoresSafeArea())
         .fullScreenCover(item: $model.openBook) { book in
             ReaderView(book: book, showContents: Self.demoShowsContents)

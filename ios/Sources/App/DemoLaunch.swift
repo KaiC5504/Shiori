@@ -21,6 +21,9 @@ enum DemoLaunch {
     static var usesWatchedFolder: Bool { arguments.bool(forKey: "DemoWatchedFolder") }
     /// Marks the first demo book as updated, so the shelf shows its badge.
     static var marksUpdated: Bool { arguments.bool(forKey: "DemoUpdated") }
+    /// A file on the simulator's host Mac, imported into whichever library is open, so a real
+    /// book can be read in the simulator without the Files picker.
+    static var importPath: String? { arguments.string(forKey: "DemoImportFile") }
 
     /// A 0-based chapter the reader jumps to once open, through the same path as Contents.
     static var jumpTo: Int? {
@@ -82,6 +85,9 @@ enum DemoLaunch {
                     await model.importFiles(urls, origin: .picker)
                 }
             }
+        }
+        if let importPath {
+            await model.importFiles([URL(filePath: importPath)], origin: .picker)
         }
         if marksUpdated, let first = try? model.database.bookList().first {
             try? model.database.markUpdated(bookId: first.id, addedChapters: 37, at: .now)
