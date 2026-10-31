@@ -99,3 +99,37 @@ import Testing
     #expect(try env.db.chapters(bookId: list[2].book.id).count == 12)
     #expect(try env.db.chapters(bookId: list[1].book.id).first?.title == "")
 }
+@Test func importFilesLogsEachCallAsOneBatch() async throws {
+    let env = try TestEnvironment()
+    let url = try env.writeEPUB(chapters: 2)
+    let first = await env.importer.importFiles(at: url, origin: .openIn, settings: .default)
+    let second = await env.importer.importFiles(at: url, origin: .watchedFolder, settings: .default)
+    let log = try env.db.importLog(limit: 10)
+    #expect(log.map(\.origin) == [.watchedFolder, .openIn])
+    #expect(log.map(\.outcomes) == [second, first])
+}
+@Test func importsPDFWithCoverAndAttributes() async throws {
+    let env = try TestEnvironment()
+    let url = try env.writePDF(name: "扫描件(某人).pdf", title: "图录", author: "编者")
+    guard case .added(let id, let title)? = await env.importer.importFiles(at: url, origin: .picker, settings: .default).first
+    else { Issue.record("not added"); return }
+    #expect(title == "图录")
+    let book = try #require(try env.db.bookList().first?.book)
+    #expect(book.format == .pdf)
+    #expect(book.author == "编者")
+    #expect(book.chapterCount == 0)
+    #expect(book.hasCover)
+    let folder = env.paths.bookDirectory(id)
+    #expect(FileManager.default.fileExists(atPath: folder.appending(path: "original.pdf").path))
+    #expect(try Data(contentsOf: folder.appending(path: "cover.jpg")).starts(with: [0xFF, 0xD8]))
+
+    // Without a title in the document, the file name gives the title and author.
+    guard case .added(let untitledId, let fromName) = await env.importer.importFile(
+        at: try env.writePDF(name: "无题(作者乙).pdf", title: nil, author: nil))
+    else { Issue.record("untitled not added"); return }
+    #expect(fromName == "无题")
+    #expect(try env.db.bookList().first { $0.id == untitledId }?.book.author == "作者乙")
+
+    let locked = try env.writePDF(name: "加密.pdf", title: nil, author: nil, password: "secret")
+    #expect(await env.importer.importFile(at: locked) == .failed(fileName: "加密.pdf", reason: .drmProtected))
+}

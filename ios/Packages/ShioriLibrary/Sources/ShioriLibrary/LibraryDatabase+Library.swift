@@ -50,4 +50,72 @@ extension LibraryDatabase {
                                outcomes: outcomes)
         }
     }
+
+    func book(id: UUID) throws -> Book? {
+        try queue.read { db in try Book.fetchOne(db, key: id) }
+    }
+
+    /// The book a new download updates in place (spec §8.4): the same EPUB identifier, else
+    /// the same title and author. Formats never cross, and a different identifier is
+    /// another source's copy, so a separate book.
+    func bookToUpdate(format: BookFormat, identifier: String?, titleAuthorKey: String) throws -> Book? {
+        try queue.read { db in
+            let sameFormat = Book.filter(Column("format") == format.rawValue).order(Column("addedAt").desc)
+            guard let identifier else {
+                return try sameFormat.filter(Column("titleAuthorKey") == titleAuthorKey).fetchOne(db)
+            }
+            if let match = try sameFormat.filter(Column("sourceIdentifier") == identifier).fetchOne(db) {
+                return match
+            }
+            return try sameFormat
+                .filter(Column("titleAuthorKey") == titleAuthorKey && Column("sourceIdentifier") == nil)
+                .fetchOne(db)
+        }
+    }
+
+    /// Replaces a book's row and chapters, and moves its progress onto the new chapters, in
+    /// one transaction: a crash leaves the old version or the new one, never a mix.
+    func replace(_ book: Book, chapters: [Chapter], remapping remap: (Progress) -> Progress) throws {
+        try queue.write { db in
+            try book.update(db)
+            _ = try Chapter.filter(Column("bookId") == book.id).deleteAll(db)
+            for chapter in chapters {
+                try chapter.insert(db)
+            }
+            if let progress = try Progress.fetchOne(db, key: book.id) {
+                try remap(progress).update(db)
+            }
+        }
+    }
+
+    /// Deletes the book (its chapters and progress cascade) and remembers it, so the watched
+    /// folder doesn't bring it back.
+    func remove(_ book: Book, at date: Date) throws {
+        try queue.write { db in
+            _ = try Book.deleteOne(db, key: book.id)
+            try RemovedBook(contentHash: book.contentHash, identityKey: book.sourceIdentifier ?? book.titleAuthorKey,
+                            title: book.title, removedAt: date).save(db)
+        }
+    }
+
+    func isRemoved(contentHash: String) throws -> Bool {
+        try queue.read { db in
+            try RemovedBook.filter(Column("contentHash") == contentHash).fetchCount(db) > 0
+        }
+    }
+
+    func isRemoved(identityKeys: [String]) throws -> Bool {
+        guard !identityKeys.isEmpty else { return false }
+        return try queue.read { db in
+            try RemovedBook.filter(identityKeys.contains(Column("identityKey"))).fetchCount(db) > 0
+        }
+    }
+
+    func forgetRemoved(contentHash: String, identityKeys: [String]) throws {
+        try queue.write { db in
+            _ = try RemovedBook
+                .filter(Column("contentHash") == contentHash || identityKeys.contains(Column("identityKey")))
+                .deleteAll(db)
+        }
+    }
 }
