@@ -96,6 +96,10 @@ final class ReaderModel {
     /// `updatedAt` and reorder the shelf.
     @ObservationIgnored private var lastSaved: ShioriLibrary.Progress?
     @ObservationIgnored private var saveTask: Task<Void, Never>?
+    /// While a finger or momentum moves the text, the scroll view can't hold its place over
+    /// rows inserted above it: the text slides into the new chapter, which asks for another
+    /// one above, and the reader runs away upwards. Chapters join above only at rest.
+    @ObservationIgnored private var isScrolling = false
 
     /// Chapters kept joined on each side of the visible one.
     private static let lead = 2
@@ -190,6 +194,11 @@ final class ReaderModel {
         }
     }
 
+    func scrollPhaseChanged(isScrolling: Bool) {
+        self.isScrolling = isScrolling
+        if !isScrolling, !isJumping { extendIfNeeded() }
+    }
+
     func saveNow() {
         saveTask?.cancel()
         guard var progress = pending, !Self.samePlace(progress, lastSaved) else { return }
@@ -235,6 +244,8 @@ final class ReaderModel {
             let result = await load(index)
             guard generation == jumpGeneration, let range = displayed else { return }
             loaded[index] = result
+            // The load may have outlasted the rest; it joins at the next one.
+            if index < range.lowerBound, isScrolling { return }
             if index > range.upperBound {
                 displayed = range.lowerBound...index
                 rows.append(contentsOf: result.rows)
@@ -252,7 +263,7 @@ final class ReaderModel {
         if range.upperBound - currentChapter < Self.lead, range.upperBound < chapters.count - 1 {
             return range.upperBound + 1
         }
-        if currentChapter - range.lowerBound < Self.lead, range.lowerBound > 0 {
+        if !isScrolling, currentChapter - range.lowerBound < Self.lead, range.lowerBound > 0 {
             return range.lowerBound - 1
         }
         return nil

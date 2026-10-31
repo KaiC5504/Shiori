@@ -72,6 +72,7 @@ struct ReaderView: View {
             if let anchor { reader.visibleAnchorChanged(anchor) }
         }
         .onScrollPhaseChange { _, phase in
+            reader.scrollPhaseChanged(isScrolling: phase != .idle)
             if phase == .interacting, showsBar { setBar(false) }
         }
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { viewport = $0 }
