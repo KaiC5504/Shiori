@@ -59,6 +59,24 @@ final class ReaderScrollTests: XCTestCase {
         assertStill(previous)
     }
 
+    /// Reading well past the chapters loaded at the jump needs tracking to follow the finger,
+    /// and reopening needs the place to have been saved.
+    func testReadingFarAheadIsSavedAndReopensThere() {
+        for _ in 0..<30 { app.swipeUp(velocity: .fast) }
+        settle()
+        let far = top()
+        XCTAssertGreaterThan(far.place.chapter, 1503, "reading stopped at \(far.label)")
+
+        app.terminate()
+        app.launchArguments = ["-DemoData", "YES", "-DemoKeep", "YES", "-DemoTab", "shelf", "-DemoReader", "1"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "〔\(far.place.chapter)·"))
+            .firstMatch.waitForExistence(timeout: 60), "reopened somewhere other than chapter \(far.place.chapter)")
+        settle()
+        let reopened = top()
+        XCTAssertEqual(reopened.place, far.place, "left at \(far.label), reopened at \(reopened.label)")
+    }
+
     private struct Place: Comparable {
         var chapter: Int
         var paragraph: Int

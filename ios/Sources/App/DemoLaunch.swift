@@ -12,6 +12,8 @@ enum DemoLaunch {
     static var showsImportResults: Bool { defaults.bool(forKey: "DemoImportResults") }
     /// Imports only the generated 3,000-chapter book, for the reader's UI tests.
     static var usesLongBook: Bool { defaults.bool(forKey: "DemoLongBook") }
+    /// Keeps the previous launch's demo library, so a UI test can kill and reopen the app.
+    static var keepsLibrary: Bool { defaults.bool(forKey: "DemoKeep") }
 
     /// A 0-based chapter the reader jumps to once open, through the same path as Contents.
     static var jumpTo: Int? {
@@ -37,13 +39,14 @@ enum DemoLaunch {
     static func paths() -> LibraryPaths? {
         guard usesDemoData else { return nil }
         let root = FileManager.default.temporaryDirectory.appending(path: "ShioriDemo", directoryHint: .isDirectory)
-        try? FileManager.default.removeItem(at: root)
+        if !keepsLibrary { try? FileManager.default.removeItem(at: root) }
         return LibraryPaths(root: root.appending(path: "Library", directoryHint: .isDirectory))
     }
 
     @MainActor static func apply(to model: AppModel) async {
         if let tab { model.selectedTab = tab }
-        if usesDemoData {
+        let kept = keepsLibrary && !((try? model.database.bookList())?.isEmpty ?? true)
+        if usesDemoData, !kept {
             let sources = model.paths.root.deletingLastPathComponent().appending(path: "Sources")
             let urls = usesLongBook
                 ? (try? DemoBooks.writeLong(into: sources)).map { [$0] }
