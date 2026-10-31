@@ -4,8 +4,8 @@ import SwiftUI
 struct ShelfView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.motionReduced) private var reduced
-    /// Set once the first rows have arrived, so rows met later by scrolling don't wait out a
-    /// stagger delay meant for the opening screenful.
+    /// Set once the opening screenful has revealed, so views met later by scrolling don't wait
+    /// out a stagger delay meant for it.
     @State private var revealSettled = false
     let onOpen: (Book) -> Void
 
@@ -24,21 +24,32 @@ struct ShelfView: View {
                 .padding(.top, 8)
             } else {
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 0) {
+                    // The shelf sits outside the lazy list, so it keeps its scroll position.
+                    VStack(alignment: .leading, spacing: 0) {
                         header
+                            .padding(.horizontal, 20)
                             .padding(.bottom, 28)
-                        SectionLabel(code: "COLLECTION / SHELF", title: "All books")
+                        SectionLabel(code: "COLLECTION / SHELF", title: "3D shelf")
                             .staggeredReveal(1)
+                            .padding(.horizontal, 20)
+                        SpineShelf(books: model.books, settled: revealSettled, open: open)
+                            .padding(.top, 4)
+                        SectionLabel(code: "COLLECTION / LIST", title: "All books")
+                            .staggeredReveal(revealSettled ? 0 : 7)
+                            .padding(.horizontal, 20)
+                            .padding(.top, 36)
                             .padding(.bottom, 4)
-                        ForEach(Array(model.books.enumerated()), id: \.element.id) { index, item in
-                            ShelfRow(item: item, open: open)
-                                .staggeredReveal(revealSettled ? 0 : index + 2)
+                        LazyVStack(alignment: .leading, spacing: 0) {
+                            ForEach(Array(model.books.enumerated()), id: \.element.id) { index, item in
+                                ShelfRow(item: item, open: open)
+                                    .staggeredReveal(revealSettled ? 0 : index + 8)
+                            }
                         }
+                        .padding(.horizontal, 20)
+                        .animation(Motion.animation(Motion.reveal, reduced: reduced), value: model.books.map(\.id))
                     }
-                    .padding(.horizontal, 20)
                     .padding(.top, 8)
                     .padding(.bottom, 16)
-                    .animation(Motion.animation(Motion.reveal, reduced: reduced), value: model.books.map(\.id))
                 }
             }
         }
@@ -66,8 +77,8 @@ struct ShelfView: View {
     }
 }
 
-/// One shelf row with its long-press menu: Remove (confirmed first) and, for TXT books,
-/// Re-detect chapters.
+/// One list row: tap to open, the round button or a long press for Remove (confirmed first)
+/// and, for TXT books, Re-detect chapters.
 private struct ShelfRow: View {
     let item: BookListItem
     let open: (BookListItem) -> Void
@@ -77,28 +88,36 @@ private struct ShelfRow: View {
     @State private var confirmingRemoval = false
 
     var body: some View {
-        Button { open(item) } label: {
-            BookRow(item: item)
-                .padding(.horizontal, 8)
-                // Paper rather than clear, so the long-press preview lifts a solid row.
-                .background(Tokens.paper)
-        }
-        .buttonStyle(PressableButtonStyle())
-        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 8))
-        .contextMenu {
-            if item.book.format == .txt {
-                Button {
-                    Task { await model.resplit(item.id) }
+        HStack(alignment: .center, spacing: 10) {
+            Button { open(item) } label: {
+                BookRow(item: item)
+            }
+            .buttonStyle(PressableButtonStyle())
+            VStack(spacing: 8) {
+                Menu {
+                    actions
                 } label: {
-                    Label { Text("Re-detect chapters") } icon: { MenuIcon.image(.refresh, scale: displayScale) }
+                    IconView(.more, size: 18)
+                        .frame(width: 36, height: 36)
+                        .background(Tokens.surface, in: Circle())
+                        .overlay { Circle().strokeBorder(Tokens.line, lineWidth: 0.5) }
+                        .contentShape(Circle())
                 }
+                .menuIndicator(.hidden)
+                .accessibilityLabel(Text("More"))
+                ReadingStatusText(state: ReadingState(item), compact: true)
+                    .font(.system(.footnote, design: .monospaced))
+                    .foregroundStyle(Tokens.inkSecondary)
+                    .lineLimit(1)
+                    .fixedSize()
             }
-            Button(role: .destructive) {
-                confirmingRemoval = true
-            } label: {
-                Label { Text("Remove from library") } icon: { MenuIcon.image(.delete, scale: displayScale) }
-            }
+            .frame(minWidth: 44)
         }
+        .padding(.horizontal, 8)
+        // Paper rather than clear, so the long-press preview lifts a solid row.
+        .background(Tokens.paper)
+        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 8))
+        .contextMenu { actions }
         .confirmationDialog(Text("Remove “\(item.book.title)”?"), isPresented: $confirmingRemoval,
                             titleVisibility: .visible) {
             Button("Remove", role: .destructive) {
@@ -114,6 +133,22 @@ private struct ShelfRow: View {
             Rectangle()
                 .fill(Tokens.line)
                 .frame(height: 1 / displayScale)
+        }
+    }
+
+    @ViewBuilder
+    private var actions: some View {
+        if item.book.format == .txt {
+            Button {
+                Task { await model.resplit(item.id) }
+            } label: {
+                Label { Text("Re-detect chapters") } icon: { MenuIcon.image(.refresh, scale: displayScale) }
+            }
+        }
+        Button(role: .destructive) {
+            confirmingRemoval = true
+        } label: {
+            Label { Text("Remove from library") } icon: { MenuIcon.image(.delete, scale: displayScale) }
         }
     }
 }
