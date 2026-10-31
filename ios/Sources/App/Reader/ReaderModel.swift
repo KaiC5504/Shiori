@@ -79,13 +79,16 @@ struct ReaderJump: Sendable {
 }
 
 /// Holds a contiguous run of chapters around the visible one, so a 4,834-chapter book only
-/// builds the chapters actually read, and saves the top visible paragraph.
+/// builds the chapters actually read, and saves the top visible paragraph. In the paged layout
+/// it lays chapters out for `PagedReaderView` and saves the page's first character instead.
 @MainActor @Observable
 final class ReaderModel {
     let book: Book
     let chapters: [Chapter]
     /// The saved paragraph, else the start of the book. `start()` settles the block.
     private(set) var initialAnchor: ParagraphAnchor
+    /// The saved place to the character, which the paged layout opens on. `start()` settles it.
+    private(set) var initialPlace: ReaderPosition
     /// The chapters in `displayed`, in order.
     private(set) var rows: [ReaderRow] = []
     private(set) var currentChapter: Int
@@ -97,6 +100,8 @@ final class ReaderModel {
     private let database: LibraryDatabase
     private let source: BookContentSource
     private let saved: ShioriLibrary.Progress?
+    /// Read at each layout, so pages always use the type the Aa sheet shows.
+    private let preferences: ReaderPreferences
     @ObservationIgnored private var loaded: [Int: LoadedChapter] = [:]
     @ObservationIgnored private var inFlight: [Int: Task<LoadedChapter, Never>] = [:]
     @ObservationIgnored private var displayed: ClosedRange<Int>?
@@ -118,31 +123,48 @@ final class ReaderModel {
     /// The paragraph `holdPlace` is putting back at the top, and the generation it took; any
     /// jump after it makes it stale.
     @ObservationIgnored private var held: (generation: Int, anchor: ParagraphAnchor)?
+    /// Where a jump is taking the scroll until it lands, so a switch to pages in that moment
+    /// goes there rather than to the paragraph it left.
+    @ObservationIgnored private var landing: ReaderPosition?
+
+    /// The paged layout's place; nil while the scroll shows.
+    @ObservationIgnored private var pagedPlace: ReaderPosition?
+    /// The text of the chapters the pages can reach next, for saving, and their newest layouts.
+    @ObservationIgnored private var pagedContents: [Int: ChapterContent] = [:]
+    @ObservationIgnored private var pagedLayouts: [Int: ChapterLayout] = [:]
+    @ObservationIgnored private var pagedSize: PageSize?
+    @ObservationIgnored private var pagedTypography: ReaderTypography?
+
+    /// Shared by every reader, so a book opened again finds its chapters already laid out.
+    private static let paginator = Paginator(cache: PaginationCache())
 
     /// Chapters kept joined on each side of the visible one.
     private static let lead = 2
 
-    private init(book: Book, database: LibraryDatabase, opened: OpenedBook) {
+    private init(book: Book, database: LibraryDatabase, preferences: ReaderPreferences, opened: OpenedBook) {
         self.book = book
         self.database = database
+        self.preferences = preferences
         chapters = opened.chapters
         source = opened.source
         saved = opened.saved
         let start = opened.saved.map { ReadingPosition.chapterIndex(for: $0, in: opened.chapters) } ?? 0
         initialAnchor = ParagraphAnchor(chapter: start, block: 0)
+        initialPlace = ReaderPosition(chapter: start, offset: 0)
         currentChapter = start
     }
 
     /// Reads the chapter list and indexes the archive off the main actor: for the test book
     /// that is thousands of rows and ZIP entries.
-    static func open(book: Book, database: LibraryDatabase, paths: LibraryPaths) async throws -> ReaderModel {
+    static func open(book: Book, database: LibraryDatabase, paths: LibraryPaths,
+                     preferences: ReaderPreferences) async throws -> ReaderModel {
         let opened = try await Task.detached(priority: .userInitiated) {
             let chapters = try database.chapters(bookId: book.id)
             guard !chapters.isEmpty else { throw ReaderError.noChapters }
             return OpenedBook(chapters: chapters, saved: try database.progress(bookId: book.id),
                               source: try BookContentSource(book: book, paths: paths))
         }.value
-        return ReaderModel(book: book, database: database, opened: opened)
+        return ReaderModel(book: book, database: database, preferences: preferences, opened: opened)
     }
 
     /// Jumps to the saved chapter, then finds the saved paragraph in its text.
@@ -150,11 +172,13 @@ final class ReaderModel {
         guard let jump = await show(chapter: initialAnchor.chapter) else { return nil }
         if let saved, let content = loaded[jump.anchor.chapter]?.content {
             initialAnchor.block = ReadingPosition.block(for: saved, in: content)
+            initialPlace.offset = min(max(saved.offset, 0), content.plainText.utf16.count)
         }
         // Nil when the chapter failed to load, so nothing is saved until the reader reaches
         // text that did, and the old position survives.
         pending = progress(at: initialAnchor)
         lastSaved = pending
+        landing = initialPlace
         return ReaderJump(generation: jump.generation, anchor: initialAnchor)
     }
 
@@ -169,6 +193,9 @@ final class ReaderModel {
         isJumping = true
         // A running extension sees the new generation and stops without touching the rows.
         extendTask = nil
+        // The scroll owns the place from here; a paged jump still waiting for its chapter
+        // mustn't save over it.
+        pagedPlace = nil
         currentChapter = chapter
         let span = chapter...min(chapter + 1, chapters.count - 1)
         let loads = span.map { index in Task { (index, await load(index, retryingFailure: true)) } }
@@ -181,7 +208,17 @@ final class ReaderModel {
         loaded = results
         displayed = span
         rows = span.flatMap { results[$0]?.rows ?? [] }
+        landing = ReaderPosition(chapter: chapter, offset: 0)
         return ReaderJump(generation: generation, anchor: ParagraphAnchor(chapter: chapter, block: 0))
+    }
+
+    /// The scroll at the paragraph holding `place`, for leaving the paged layout. Lands like
+    /// any jump, through `finishJump`.
+    func show(place: ReaderPosition) async -> ReaderJump? {
+        guard let jump = await show(chapter: place.chapter) else { return nil }
+        let block = loaded[place.chapter]?.content?.block(containing: place.offset) ?? 0
+        landing = place
+        return ReaderJump(generation: jump.generation, anchor: ParagraphAnchor(chapter: place.chapter, block: block))
     }
 
     /// Resumes tracking at `jump.anchor`, saves it at once since a jump is a deliberate move,
@@ -189,6 +226,7 @@ final class ReaderModel {
     func finishJump(_ jump: ReaderJump) {
         guard isJumping, jump.generation == jumpGeneration else { return }
         isJumping = false
+        landing = nil
         lastVisible = jump.anchor
         currentChapter = jump.anchor.chapter
         pending = progress(at: jump.anchor) ?? pending
@@ -351,6 +389,134 @@ final class ReaderModel {
         }
         inFlight[index] = task
         return task
+    }
+}
+
+/// The paged layout: chapters laid out for `PagedReaderView`, and its place, kept and saved as
+/// (chapter, UTF-16 offset of the page's first character).
+extension ReaderModel: PagedSource {
+    var chapterCount: Int { chapters.count }
+
+    /// Leaves the scroll for pages at the top paragraph's first character, or the place a jump
+    /// is landing on.
+    func switchToPaged() -> ReaderPosition {
+        let place = landing ?? scrollPlace(of: lastVisible ?? initialAnchor)
+        enterPaged(at: place)
+        return place
+    }
+
+    /// Hands the place to the pages. Anything the scroll was still landing is dropped, and it
+    /// tracks nothing until `show(place:)` brings it back.
+    func enterPaged(at place: ReaderPosition) {
+        jumpGeneration += 1
+        isJumping = true
+        extendTask = nil
+        held = nil
+        landing = nil
+        pagedPlace = place
+        currentChapter = min(max(place.chapter, 0), chapters.count - 1)
+    }
+
+    /// The pages turned to `place`, or jumped there. A turn saves 500 ms later, as a scroll does;
+    /// a jump at once. In a chapter that couldn't be read nothing is saved, so the last good
+    /// place survives.
+    func pagedMoved(to place: ReaderPosition, jumped: Bool = false) {
+        guard chapters.indices.contains(place.chapter) else { return }
+        pagedPlace = place
+        currentChapter = place.chapter
+        trimPaged()
+        guard let content = pagedContents[place.chapter] else {
+            // A turn's page was laid out from its chapter's text, so a turn without it is into a
+            // chapter that couldn't be read, and the save still due for the page before stands.
+            // A jump can simply arrive before its chapter has loaded.
+            guard jumped else { return }
+            Task { [weak self] in
+                guard let self, let content = await self.pagedContent(place.chapter), self.pagedPlace == place
+                else { return }
+                self.pending = self.progress(at: place, in: content)
+                self.saveNow()
+            }
+            return
+        }
+        pending = progress(at: place, in: content)
+        if jumped {
+            saveNow()
+            return
+        }
+        saveTask?.cancel()
+        saveTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled else { return }
+            self?.saveNow()
+        }
+    }
+
+    /// The page a turn from `place` reaches, from the layouts already made: for taps the page
+    /// itself never sees. Nil at either end of the book, or before the chapter behind is laid out.
+    func pagedNeighbour(of place: ReaderPosition, forward: Bool) -> ReaderPosition? {
+        guard let layout = pagedLayouts[place.chapter] else { return nil }
+        let index = layout.page(containing: place.offset) + (forward ? 1 : -1)
+        if layout.pages.indices.contains(index) {
+            return ReaderPosition(chapter: place.chapter, offset: layout.pages[index].range.lowerBound)
+        }
+        let chapter = place.chapter + (forward ? 1 : -1)
+        guard chapters.indices.contains(chapter) else { return nil }
+        if forward { return ReaderPosition(chapter: chapter, offset: 0) }
+        guard let last = pagedLayouts[chapter]?.pages.last else { return nil }
+        return ReaderPosition(chapter: chapter, offset: last.range.lowerBound)
+    }
+
+    func layout(chapter: Int, size: PageSize) async -> ChapterLayout? {
+        guard chapters.indices.contains(chapter) else { return nil }
+        let typography = preferences.typography
+        // Layouts at another size or type would point taps at the wrong pages.
+        if size != pagedSize || typography != pagedTypography {
+            pagedSize = size
+            pagedTypography = typography
+            pagedLayouts = [:]
+        }
+        guard let content = await pagedContent(chapter) else { return nil }
+        let key = PaginationKey(bookId: book.id, chapter: chapters[chapter].key, typography: typography, size: size)
+        let paginator = Self.paginator
+        // A detached task awaited from here would be raised to this task's priority; a global
+        // queue keeps the neighbours behind the chapter being read.
+        let qos: DispatchQoS.QoSClass = chapter == currentChapter ? .userInitiated : .utility
+        let layout = await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: qos).async {
+                continuation.resume(returning: paginator.layout(content, key: key))
+            }
+        }
+        if size == pagedSize, typography == pagedTypography {
+            pagedLayouts[chapter] = layout
+            trimPaged()
+        }
+        return layout
+    }
+
+    private func scrollPlace(of anchor: ParagraphAnchor) -> ReaderPosition {
+        ReaderPosition(chapter: anchor.chapter,
+                       offset: loaded[anchor.chapter]?.content?.offset(ofBlock: anchor.block) ?? 0)
+    }
+
+    private func progress(at place: ReaderPosition, in content: ChapterContent) -> ShioriLibrary.Progress {
+        ReadingPosition.progress(bookId: book.id, chapter: chapters[place.chapter], chapterCount: chapters.count,
+                                 content: content, offset: place.offset, now: .now)
+    }
+
+    /// The same loads the scroll uses, so a chapter read in both is read from the archive once.
+    private func pagedContent(_ chapter: Int) async -> ChapterContent? {
+        if let content = pagedContents[chapter] { return content }
+        guard let content = await load(chapter, retryingFailure: true).content else { return nil }
+        pagedContents[chapter] = content
+        trimPaged()
+        return content
+    }
+
+    /// Keeps the chapters a turn or two can reach.
+    private func trimPaged() {
+        let near = (currentChapter - 2)...(currentChapter + 2)
+        pagedContents = pagedContents.filter { near.contains($0.key) }
+        pagedLayouts = pagedLayouts.filter { near.contains($0.key) }
     }
 }
 
