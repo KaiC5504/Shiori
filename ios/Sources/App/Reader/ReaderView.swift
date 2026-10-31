@@ -112,6 +112,9 @@ struct ReaderView: View {
             onContents: { sheet = .contents },
             onAppearance: openAppearance,
             onDayNight: toggleDayNight)
+        .environment(\.readerChapterTitle) { [chapters = reader.chapters] index in
+            chapters.indices.contains(index) ? chapters[index].title : nil
+        }
     }
 
     private func footer(_ reader: ReaderModel) -> some View {
@@ -193,6 +196,9 @@ struct ReaderView: View {
 
     private func open() async {
         guard reader == nil, !openFailed else { return }
+        // A downloaded Apple font is only registered for the running app; without this the
+        // first layout would fall back to the system font.
+        await FontDownloads.shared.activate(model.readerPreferences.typography.fontFamily)
         do {
             let reader = try await ReaderModel.open(book: book, database: model.database, paths: model.paths)
             let jump = await reader.start()
