@@ -132,6 +132,8 @@ final class ReaderModel {
     /// The text of the chapters the pages can reach next, for saving, and their newest layouts.
     @ObservationIgnored private var pagedContents: [Int: ChapterContent] = [:]
     @ObservationIgnored private var pagedLayouts: [Int: ChapterLayout] = [:]
+    /// Chapters whose text couldn't be read; the pages show each as one page.
+    @ObservationIgnored private var pagedFailed: Set<Int> = []
     @ObservationIgnored private var pagedSize: PageSize?
     @ObservationIgnored private var pagedTypography: ReaderTypography?
 
@@ -174,10 +176,12 @@ final class ReaderModel {
             initialAnchor.block = ReadingPosition.block(for: saved, in: content)
             initialPlace.offset = min(max(saved.offset, 0), content.plainText.utf16.count)
         }
+        // The stored row itself, to the character: a paged save sits mid-paragraph, and a page
+        // turned to that paragraph's start must still count as a move.
+        lastSaved = saved
         // Nil when the chapter failed to load, so nothing is saved until the reader reaches
         // text that did, and the old position survives.
         pending = progress(at: initialAnchor)
-        lastSaved = pending
         landing = initialPlace
         return ReaderJump(generation: jump.generation, anchor: initialAnchor)
     }
@@ -297,6 +301,13 @@ final class ReaderModel {
     private func progress(at anchor: ParagraphAnchor) -> ShioriLibrary.Progress? {
         guard chapters.indices.contains(anchor.chapter), let content = loaded[anchor.chapter]?.content else {
             return nil
+        }
+        // The scroll only knows paragraphs, so the one holding the stored place is that place:
+        // the exact character the pages saved survives, and landing on it writes nothing.
+        let chapter = chapters[anchor.chapter]
+        if let lastSaved, lastSaved.chapterIndex == anchor.chapter, lastSaved.keyTitle == chapter.keyTitle,
+           lastSaved.keyOccurrence == chapter.keyOccurrence, content.block(containing: lastSaved.offset) == anchor.block {
+            return lastSaved
         }
         return ReadingPosition.progress(bookId: book.id, chapter: chapters[anchor.chapter],
                                         chapterCount: chapters.count, content: content,
@@ -454,14 +465,18 @@ extension ReaderModel: PagedSource {
     /// The page a turn from `place` reaches, from the layouts already made: for taps the page
     /// itself never sees. Nil at either end of the book, or before the chapter behind is laid out.
     func pagedNeighbour(of place: ReaderPosition, forward: Bool) -> ReaderPosition? {
-        guard let layout = pagedLayouts[place.chapter] else { return nil }
-        let index = layout.page(containing: place.offset) + (forward ? 1 : -1)
-        if layout.pages.indices.contains(index) {
-            return ReaderPosition(chapter: place.chapter, offset: layout.pages[index].range.lowerBound)
+        // A chapter that couldn't be read is one page, as the paged view shows it.
+        if let layout = pagedLayouts[place.chapter] {
+            let index = layout.page(containing: place.offset) + (forward ? 1 : -1)
+            if layout.pages.indices.contains(index) {
+                return ReaderPosition(chapter: place.chapter, offset: layout.pages[index].range.lowerBound)
+            }
+        } else if !pagedFailed.contains(place.chapter) {
+            return nil
         }
         let chapter = place.chapter + (forward ? 1 : -1)
         guard chapters.indices.contains(chapter) else { return nil }
-        if forward { return ReaderPosition(chapter: chapter, offset: 0) }
+        if forward || pagedFailed.contains(chapter) { return ReaderPosition(chapter: chapter, offset: 0) }
         guard let last = pagedLayouts[chapter]?.pages.last else { return nil }
         return ReaderPosition(chapter: chapter, offset: last.range.lowerBound)
     }
@@ -475,7 +490,11 @@ extension ReaderModel: PagedSource {
             pagedTypography = typography
             pagedLayouts = [:]
         }
-        guard let content = await pagedContent(chapter) else { return nil }
+        guard let content = await pagedContent(chapter) else {
+            pagedFailed.insert(chapter)
+            return nil
+        }
+        pagedFailed.remove(chapter)
         let key = PaginationKey(bookId: book.id, chapter: chapters[chapter].key, typography: typography, size: size)
         let paginator = Self.paginator
         // A detached task awaited from here would be raised to this task's priority; a global
@@ -517,6 +536,7 @@ extension ReaderModel: PagedSource {
         let near = (currentChapter - 2)...(currentChapter + 2)
         pagedContents = pagedContents.filter { near.contains($0.key) }
         pagedLayouts = pagedLayouts.filter { near.contains($0.key) }
+        pagedFailed = pagedFailed.filter { near.contains($0) }
     }
 }
 
