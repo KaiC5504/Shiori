@@ -11,7 +11,7 @@ final class ReaderPagedTests: XCTestCase {
         app = XCUIApplication()
         // A fresh library and fresh settings (relay, standard zones): -DemoKeep here would reopen
         // whatever an earlier test left behind.
-        app.launchArguments = ["-DemoData", "YES", "-DemoLongBook", "YES", "-DemoLayout", "paged",
+        app.launchArguments = ["-DemoData", "YES", "-DemoLongBook", "YES", "-DemoLayout", "paged", "-DemoEffect", "relay",
                                "-DemoTab", "shelf", "-DemoReader", "1", "-DemoJumpTo", "1499"]
         app.launch()
         XCTAssertTrue(page(containing: "〔1500·").waitForExistence(timeout: 90), "the jump never showed chapter 1500")
@@ -25,6 +25,22 @@ final class ReaderPagedTests: XCTestCase {
         let after = page()
         XCTAssertGreaterThan(after.first, before.first, "the tap went from \(before.first) to \(after.first)")
         // One page on: the new page starts in the paragraph the last one ended in, or the next.
+        XCTAssertLessThanOrEqual(after.first, before.last.next, "skipped from \(before.last) to \(after.first)")
+    }
+
+    /// Curl, the default effect, through the same tap zones.
+    func testCurlTurnsForward() {
+        app.terminate()
+        app.launchArguments = ["-DemoData", "YES", "-DemoLongBook", "YES", "-DemoLayout", "paged", "-DemoEffect", "curl",
+                               "-DemoTab", "shelf", "-DemoReader", "1", "-DemoJumpTo", "1499"]
+        app.launch()
+        XCTAssertTrue(page(containing: "〔1500·").waitForExistence(timeout: 90), "the jump never showed chapter 1500")
+        settle()
+        let before = page()
+        tap(atX: 0.9)
+        settle()
+        let after = page()
+        XCTAssertGreaterThan(after.first, before.first, "the curl went from \(before.first) to \(after.first)")
         XCTAssertLessThanOrEqual(after.first, before.last.next, "skipped from \(before.last) to \(after.first)")
     }
 

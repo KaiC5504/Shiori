@@ -148,7 +148,8 @@ final class ReaderPreferences {
         nightTextBrightness = defaults.object(forKey: Keys.nightTextBrightness) as? Double ?? 0.8
         showsInfoFooter = defaults.object(forKey: Keys.showsInfoFooter) as? Bool ?? true
         layout = defaults.string(forKey: Keys.layout).flatMap(ReaderLayout.init) ?? .scroll
-        effect = defaults.string(forKey: Keys.effect).flatMap(PageTurnEffect.init) ?? .relay
+        // KaiC prefers Apple's curl to relay as the first paged effect (2026-11-01).
+        effect = defaults.string(forKey: Keys.effect).flatMap(PageTurnEffect.init) ?? .curl
         speed = defaults.string(forKey: Keys.speed).flatMap(TurnSpeed.init) ?? .standard
         tapLayout = defaults.string(forKey: Keys.tapLayout).flatMap(TapZoneLayout.init) ?? .standard
         bothSidesForward = defaults.object(forKey: Keys.bothSidesForward) as? Bool ?? false
