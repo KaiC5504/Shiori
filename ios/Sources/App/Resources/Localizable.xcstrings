@@ -1,7 +1,346 @@
 {
-  "sourceLanguage" : "en",
-  "strings" : {
-
-  },
-  "version" : "1.0"
+  "sourceLanguage": "en",
+  "version": "1.0",
+  "strings": {
+    "About": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关于"
+          }
+        }
+      }
+    },
+    "Added": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已添加"
+          }
+        }
+      }
+    },
+    "Already in library": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已在书架中"
+          }
+        }
+      }
+    },
+    "Back": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "返回"
+          }
+        }
+      }
+    },
+    "Close": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭"
+          }
+        }
+      }
+    },
+    "Contents": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目录"
+          }
+        }
+      }
+    },
+    "Couldn't open this chapter.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法打开这一章。"
+          }
+        }
+      }
+    },
+    "Couldn't read the file.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取文件。"
+          }
+        }
+      }
+    },
+    "Current chapter": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前章节"
+          }
+        }
+      }
+    },
+    "EPUB and TXT files from Files, iCloud Drive or a USB drive.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可从“文件”、iCloud 云盘或 U 盘导入 EPUB 和 TXT 文件。"
+          }
+        }
+      }
+    },
+    "Failed": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入失败"
+          }
+        }
+      }
+    },
+    "Fixed-layout books aren't supported yet.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂不支持固定版式的书。"
+          }
+        }
+      }
+    },
+    "Import": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入"
+          }
+        }
+      }
+    },
+    "Import EPUB or TXT books to start reading.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入 EPUB 或 TXT 书籍开始阅读。"
+          }
+        }
+      }
+    },
+    "Import books": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "去导入"
+          }
+        }
+      }
+    },
+    "Import files": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入文件"
+          }
+        }
+      }
+    },
+    "Importing…": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在导入…"
+          }
+        }
+      }
+    },
+    "More settings arrive in the next builds.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更多设置将在后续版本中加入。"
+          }
+        }
+      }
+    },
+    "No chapters were found.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有找到章节。"
+          }
+        }
+      }
+    },
+    "No imports yet": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "还没有导入记录"
+          }
+        }
+      }
+    },
+    "Only EPUB and TXT for now.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目前只支持 EPUB 和 TXT。"
+          }
+        }
+      }
+    },
+    "Part %lld": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "第 %lld 部分"
+          }
+        }
+      }
+    },
+    "Preface": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "前言"
+          }
+        }
+      }
+    },
+    "Recent imports": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最近导入"
+          }
+        }
+      }
+    },
+    "Settings": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置"
+          }
+        }
+      }
+    },
+    "Shelf": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "书架"
+          }
+        }
+      }
+    },
+    "Shiori couldn't open its library.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shiori 无法打开书库。"
+          }
+        }
+      }
+    },
+    "Source code": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "源代码"
+          }
+        }
+      }
+    },
+    "The file is empty.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件是空的。"
+          }
+        }
+      }
+    },
+    "This book is DRM-protected.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此书受 DRM 保护，无法导入。"
+          }
+        }
+      }
+    },
+    "Too large (over %@).": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件过大（超过 %@）。"
+          }
+        }
+      }
+    },
+    "Unread": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未读"
+          }
+        }
+      }
+    },
+    "Version %@ (%@)": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "版本 %1$@（%2$@）"
+          }
+        }
+      }
+    },
+    "Your shelf is empty": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "书架还是空的"
+          }
+        }
+      }
+    }
+  }
 }

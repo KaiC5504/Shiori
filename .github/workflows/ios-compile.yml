@@ -117,6 +117,27 @@ jobs:
           xcrun simctl launch "$UDID" $APP
           sleep 15
           xcrun simctl io "$UDID" screenshot shots/01-first-launch.png
+          # Debug builds read demo launch arguments (DemoLaunch.swift), so every screen can be
+          # shot. `shot` uses the real, empty library; `shoot` adds -DemoData YES, a throwaway
+          # library with three generated books.
+          shot() {
+            name=$1; wait=$2; shift 2
+            xcrun simctl terminate "$UDID" $APP || true
+            xcrun simctl launch "$UDID" $APP "$@"
+            sleep "$wait"
+            xcrun simctl io "$UDID" screenshot "shots/$name.png"
+          }
+          shoot() { name=$1; wait=$2; shift 2; shot "$name" "$wait" -DemoData YES "$@"; }
+          shot 02-shelf-empty 8 -DemoTab shelf
+          shoot 03-import 10 -DemoTab imports -DemoImportResults YES
+          shoot 04-shelf 10 -DemoTab shelf
+          shoot 05-settings 8 -DemoTab settings
+          shoot 06-reader 12 -DemoTab shelf -DemoReader 1
+          shoot 07-contents 12 -DemoTab shelf -DemoReader 1 -DemoContents YES
+          xcrun simctl ui "$UDID" appearance dark
+          shoot 04-shelf-dark 10 -DemoTab shelf
+          shoot 06-reader-dark 12 -DemoTab shelf -DemoReader 1
+          xcrun simctl ui "$UDID" appearance light
           ls -la shots
 
       - name: Collect crash reports
