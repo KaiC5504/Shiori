@@ -3,11 +3,19 @@ import SwiftUI
 
 struct BookRow: View {
     let item: BookListItem
+    /// The cover a detail page pushed from this row zooms out of.
+    let zoom: CoverZoom?
     @ScaledMetric(relativeTo: .body) private var coverWidth: CGFloat = 52
+
+    init(item: BookListItem, zoom: CoverZoom? = nil) {
+        self.item = item
+        self.zoom = zoom
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
             BookCover(book: item.book, width: coverWidth)
+                .coverZoomSource(zoom)
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 8) {
                     SerialText(bookId: item.id)
@@ -39,10 +47,11 @@ struct BookRow: View {
     }
 }
 
-/// Where the reader stands in a book (spec §6.3: Unread, Chapter N, Finished).
+/// Where the reader stands in a book (spec §6.3: Unread, Chapter N, Finished; a PDF has pages).
 enum ReadingState: Equatable {
     case unread
     case reading(chapter: Int, of: Int, fraction: Double)
+    case page(Int, fraction: Double)
     case finished
 
     init(_ item: BookListItem) {
@@ -50,13 +59,18 @@ enum ReadingState: Equatable {
             self = .unread
             return
         }
-        self = progress.fraction >= 0.995
-            ? .finished
-            : .reading(chapter: progress.chapterIndex + 1, of: item.book.chapterCount, fraction: progress.fraction)
+        if progress.fraction >= 0.995 {
+            self = .finished
+        } else if item.book.format == .pdf {
+            // A PDF keeps its page in chapterIndex.
+            self = .page(progress.chapterIndex + 1, fraction: progress.fraction)
+        } else {
+            self = .reading(chapter: progress.chapterIndex + 1, of: item.book.chapterCount, fraction: progress.fraction)
+        }
     }
 }
 
-/// `compact` is the list's "12/18"; otherwise "Chapter 12 · 62%".
+/// `compact` is the list's "12/18" or "Page 12"; otherwise "Chapter 12 · 62%" or "Page 12 · 62%".
 struct ReadingStatusText: View {
     let state: ReadingState
     let compact: Bool
@@ -75,6 +89,17 @@ struct ReadingStatusText: View {
             } else {
                 HStack(spacing: 0) {
                     Text("Chapter \(chapter)")
+                    Text(verbatim: " · ")
+                    Text(fraction, format: .percent.precision(.fractionLength(0)))
+                }
+            }
+        case let .page(page, fraction):
+            if compact {
+                Text("Page \(page)")
+                    .monospacedDigit()
+            } else {
+                HStack(spacing: 0) {
+                    Text("Page \(page)")
                     Text(verbatim: " · ")
                     Text(fraction, format: .percent.precision(.fractionLength(0)))
                 }

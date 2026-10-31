@@ -8,6 +8,7 @@ struct SpineShelf: View {
     let books: [BookListItem]
     /// Set once the opening reveal has played, so slots met later don't wait out a stagger.
     let settled: Bool
+    let zoom: Namespace.ID
     let open: (BookListItem) -> Void
 
     @Environment(\.motionReduced) private var reduced
@@ -19,9 +20,10 @@ struct SpineShelf: View {
     @State private var scrolling = false
     @State private var ticks = 0
 
-    init(books: [BookListItem], settled: Bool, open: @escaping (BookListItem) -> Void) {
+    init(books: [BookListItem], settled: Bool, zoom: Namespace.ID, open: @escaping (BookListItem) -> Void) {
         self.books = books
         self.settled = settled
+        self.zoom = zoom
         self.open = open
         let home = ShelfRing(books).home
         _crest = State(initialValue: home)
@@ -31,18 +33,20 @@ struct SpineShelf: View {
     var body: some View {
         let ring = ShelfRing(books)
         let current = ring.item(at: crest ?? ring.home)
+        let metrics = ShelfMetrics(width: width > 0 ? width : 390, reduced: reduced)
+        let foot = ring.lastReadId == nil ? 0 : ShelfRibbon.foot(metrics)
         VStack(alignment: .leading, spacing: 6) {
             if width > 0, ring.slotCount == 1, let current {
-                single(current, ShelfMetrics(width: width, reduced: reduced))
+                single(current, metrics, foot: foot)
             } else if width > 0 {
-                row(ring, ShelfMetrics(width: width, reduced: reduced), current: current)
+                row(ring, metrics, foot: foot, current: current)
             } else {
-                Color.clear.frame(height: ShelfMetrics(width: 390, reduced: reduced).stageHeight)
+                Color.clear.frame(height: metrics.stageHeight + foot)
             }
             if let current {
                 CrestCaption(item: current, open: { open(current) })
                     .padding(.horizontal, 20)
-                    .staggeredReveal(settled ? 0 : 6)
+                    .staggeredReveal(settled ? 0 : 7)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -53,12 +57,13 @@ struct SpineShelf: View {
     }
 
     /// One book stands alone at the centre, facing out.
-    private func single(_ item: BookListItem, _ metrics: ShelfMetrics) -> some View {
-        SpineBook(item: item, number: 1, marked: item.progress != nil, metrics: metrics, pinned: true)
-            .staggeredReveal(settled ? 0 : 2)
+    private func single(_ item: BookListItem, _ metrics: ShelfMetrics, foot: CGFloat) -> some View {
+        SpineBook(item: item, number: 1, marked: item.progress != nil, metrics: metrics, foot: foot, pinned: true)
+            .staggeredReveal(settled ? 0 : 3)
             .frame(maxWidth: .infinity)
-            .frame(height: metrics.stageHeight)
-            .background { ShelfBoard(metrics: metrics) }
+            .frame(height: metrics.stageHeight + foot)
+            .background(alignment: .top) { ShelfBoard(metrics: metrics) }
+            .overlay { crestSource(item, metrics) }
             .contentShape(Rectangle())
             .onTapGesture { open(item) }
             .accessibilityElement(children: .ignore)
@@ -68,14 +73,15 @@ struct SpineShelf: View {
             .accessibilityAction { open(item) }
     }
 
-    private func row(_ ring: ShelfRing, _ metrics: ShelfMetrics, current: BookListItem?) -> some View {
+    private func row(_ ring: ShelfRing, _ metrics: ShelfMetrics, foot: CGFloat, current: BookListItem?) -> some View {
         ScrollView(.horizontal) {
             LazyHStack(spacing: 0) {
                 ForEach(0..<ring.slotCount, id: \.self) { slot in
                     let index = ring.index(at: slot)
                     let item = ring.books[index]
-                    SpineBook(item: item, number: index + 1, marked: item.id == ring.lastReadId, metrics: metrics)
-                        .staggeredReveal(settled ? 0 : min(abs(slot - ring.home), 8) + 2)
+                    SpineBook(item: item, number: index + 1, marked: item.id == ring.lastReadId,
+                              metrics: metrics, foot: foot)
+                        .staggeredReveal(settled ? 0 : min(abs(slot - ring.home), 8) + 3)
                 }
             }
             .scrollTargetLayout()
@@ -91,8 +97,11 @@ struct SpineShelf: View {
         .onChange(of: crest) {
             if scrolling { ticks += 1 }
         }
-        .frame(height: metrics.stageHeight)
-        .background { ShelfBoard(metrics: metrics) }
+        .frame(height: metrics.stageHeight + foot)
+        .background(alignment: .top) { ShelfBoard(metrics: metrics) }
+        .overlay {
+            if let current { crestSource(current, metrics) }
+        }
         .contentShape(Rectangle())
         .onTapGesture { location in
             tap(at: location.x, ring: ring, metrics: metrics)
@@ -135,6 +144,23 @@ struct SpineShelf: View {
         crest = slot
         position.scrollTo(id: slot, anchor: .center)
     }
+
+    /// Where the crest's cover rests, for its detail page to zoom out of. The faces are drawn
+    /// through transforms the zoom can't follow, so a plain frame over the cover stands in.
+    private func crestSource(_ item: BookListItem, _ metrics: ShelfMetrics) -> some View {
+        let block = BookBlock(bookId: item.id, chapterCount: item.book.chapterCount, metrics: metrics)
+        let cover = CGRect(x: 0, y: 0, width: block.depth, height: block.height)
+            .applying(BookPose(offset: 0, block: block, metrics: metrics).transform(.cover))
+            .offsetBy(dx: (metrics.viewport - metrics.pitch) / 2, dy: 0)
+        return Color.clear
+            .frame(width: cover.width, height: cover.height)
+            .coverZoomSource(CoverZoom(id: ShelfDetail(bookId: item.id, source: .crest), namespace: zoom))
+            .padding(.leading, cover.minX)
+            .padding(.top, cover.minY)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+    }
 }
 
 /// Which book stands in which slot. The featured books run as a ring around the home slot,
@@ -153,8 +179,12 @@ struct ShelfRing {
         books = Array(all.prefix(Self.featuredCount))
         slotCount = books.count > 1 ? max(Self.featuredCount, books.count) : books.count
         home = slotCount / 2
-        lastReadId = all
-            .compactMap { item in item.progress.map { (item.id, $0.updatedAt) } }
+        lastReadId = Self.lastRead(in: all)?.id
+    }
+
+    /// The book read most recently: the one with the ribbon, and the Continue card's.
+    static func lastRead(in all: [BookListItem]) -> BookListItem? {
+        all.compactMap { item in item.progress.map { (item, $0.updatedAt) } }
             .max { $0.1 < $1.1 }?.0
     }
 

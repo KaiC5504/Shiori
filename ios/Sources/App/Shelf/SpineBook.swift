@@ -11,6 +11,8 @@ struct SpineBook: View {
     let number: Int
     let marked: Bool
     let metrics: ShelfMetrics
+    /// Room below the stage for the ribbon; every slot in a row gets the same.
+    let foot: CGFloat
     /// Always posed as the crest, for a shelf of one book that has no row to scroll.
     let pinned: Bool
 
@@ -20,12 +22,13 @@ struct SpineBook: View {
     @State private var image: UIImage?
     @State private var palette: BookPalette
 
-    init(item: BookListItem, number: Int, marked: Bool, metrics: ShelfMetrics, pinned: Bool = false) {
+    init(item: BookListItem, number: Int, marked: Bool, metrics: ShelfMetrics, foot: CGFloat = 0, pinned: Bool = false) {
         self.item = item
         self.pinned = pinned
         self.number = number
         self.marked = marked
         self.metrics = metrics
+        self.foot = foot
         let key = CoverThumbnails.key(item.book)
         _image = State(initialValue: item.book.hasCover
             ? CoverThumbnails.cached(key, height: metrics.coverHeight) : nil)
@@ -35,7 +38,7 @@ struct SpineBook: View {
     var body: some View {
         let block = BookBlock(bookId: item.id, chapterCount: item.book.chapterCount, metrics: metrics)
         let shadow = BookPose.shadowSize(block)
-        let ribbon = BookPose.ribbonSize(block, rise: metrics.ribbonRise)
+        let ribbon = ShelfRibbon.size(block)
         ZStack(alignment: .topLeading) {
             face(.shadow, block) {
                 Ellipse()
@@ -49,10 +52,17 @@ struct SpineBook: View {
             face(.coverShade, block) {
                 palette.shade.frame(width: block.depth, height: block.height)
             }
+            // Before the spine, which hides the ribbon's top edge where it tucks under the book.
             if marked {
-                face(.ribbon, block) {
+                hanging(ribbon, block) {
                     RibbonShape()
                         .fill(Tokens.ribbon)
+                        .overlay {
+                            // Shaded where it comes out from under the book.
+                            LinearGradient(colors: [palette.shade.opacity(0.5), palette.shade.opacity(0)],
+                                           startPoint: .top, endPoint: UnitPoint(x: 0.5, y: 0.3))
+                                .clipShape(RibbonShape())
+                        }
                         .frame(width: ribbon.width, height: ribbon.height)
                 }
             }
@@ -61,7 +71,7 @@ struct SpineBook: View {
                 palette.shade.frame(width: block.thickness, height: block.height)
             }
         }
-        .frame(width: metrics.pitch, height: metrics.stageHeight, alignment: .topLeading)
+        .frame(width: metrics.pitch, height: metrics.stageHeight + foot, alignment: .topLeading)
         .task(id: CoverThumbnails.key(item.book)) { await loadCover() }
     }
 
@@ -72,13 +82,23 @@ struct SpineBook: View {
         return content()
             .frame(width: metrics.pitch, height: metrics.stageHeight, alignment: .topLeading)
             .visualEffect { effect, proxy in
-                let row = NamedCoordinateSpace.scrollView(axis: .horizontal)
-                let offset = pinned ? 0 : proxy.bounds(of: row).map { proxy.size.width / 2 - $0.midX }
-                    ?? proxy.frame(in: row).midX - metrics.viewport / 2
-                let pose = BookPose(offset: offset, block: block, metrics: metrics)
+                let pose = BookPose(proxy: proxy, pinned: pinned, block: block, metrics: metrics)
                 return effect
                     .transformEffect(pose.transform(face))
                     .opacity(pose.opacity(face))
+            }
+    }
+
+    private func hanging<Content: View>(_ size: CGSize, _ block: BookBlock,
+                                        @ViewBuilder content: () -> Content) -> some View {
+        let metrics = metrics
+        let pinned = pinned
+        return content()
+            .frame(width: metrics.pitch, height: metrics.stageHeight, alignment: .topLeading)
+            .visualEffect { effect, proxy in
+                let pose = BookPose(proxy: proxy, pinned: pinned, block: block, metrics: metrics)
+                return effect.transformEffect(ShelfRibbon.transform(size, block: block, pose: pose,
+                                                                    tuck: metrics.reduced ? 0 : 1))
             }
     }
 
@@ -288,6 +308,50 @@ private struct VerticalText: View {
         "（": "︵", "）": "︶", "《": "︽", "》": "︾", "「": "﹁", "」": "﹂", "『": "﹃", "』": "﹄",
         "【": "︻", "】": "︼", "…": "︙", "—": "︱", ":": "︓", "!": "︕", "?": "︖", "(": "︵", ")": "︶",
     ]
+}
+
+extension BookPose {
+    /// The pose of a face laid out in one of the row's slots.
+    init(proxy: GeometryProxy, pinned: Bool, block: BookBlock, metrics: ShelfMetrics) {
+        let row = NamedCoordinateSpace.scrollView(axis: .horizontal)
+        let offset = pinned ? 0 : proxy.bounds(of: row).map { proxy.size.width / 2 - $0.midX }
+            ?? proxy.frame(in: row).midX - metrics.viewport / 2
+        self.init(offset: offset, block: block, metrics: metrics)
+    }
+}
+
+/// The last-read ribbon (spec §6.2, decision 3). It hangs out of the bottom of the book below
+/// the spine, over the shelf board's front edge, like a real bookmark ribbon. It moves with the
+/// book but keeps facing out as the crest turns, so it reads there too and never crosses the
+/// cover, which starts at the spine's far edge.
+enum ShelfRibbon {
+    static func size(_ block: BookBlock) -> CGSize {
+        CGSize(width: max(6, (block.thickness * 0.36).rounded()), height: (block.height * 0.2).rounded())
+    }
+
+    /// How far below `ShelfMetrics.stageHeight` the row has to reach for the lowest ribbon: the
+    /// crest's, which is dropped and scaled up.
+    static func foot(_ metrics: ShelfMetrics) -> CGFloat {
+        let length = (metrics.coverHeight * 0.2).rounded()
+        let reach = metrics.reduced ? length : metrics.drop + length * (1 + ShelfMetrics.crestScale)
+        return max(0, (reach + 4 - (metrics.stageHeight - metrics.baseline)).rounded(.up))
+    }
+
+    /// `tuck` lifts the top behind the spine, so no seam shows between them.
+    static func transform(_ size: CGSize, block: BookBlock, pose: BookPose, tuck: CGFloat) -> CGAffineTransform {
+        let spine = pose.transform(.spine)
+        // Height runs straight down the projection, so this is the pose's scale.
+        let scale = spine.d
+        let width = size.width * scale
+        let middle = CGPoint(x: block.thickness / 2, y: block.height).applying(spine)
+        let hinge = CGPoint(x: block.thickness, y: block.height).applying(spine)
+        let left = min(middle.x - width / 2, hinge.x - width - 1)
+        // As the book turns, the spine's bottom edge slopes down toward the hinge. The ribbon
+        // starts from that edge's highest point above it, and the spine hides the rest.
+        let top = middle.y + (left - middle.x) * spine.b / spine.a - tuck
+        return CGAffineTransform(scaleX: scale, y: scale)
+            .concatenating(CGAffineTransform(translationX: left, y: top))
+    }
 }
 
 /// The last-read bookmark: a ribbon with a swallowtail end.

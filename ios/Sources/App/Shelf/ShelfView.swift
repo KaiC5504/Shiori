@@ -4,9 +4,15 @@ import SwiftUI
 struct ShelfView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.motionReduced) private var reduced
+    @Environment(\.displayScale) private var displayScale
     /// Set once the opening screenful has revealed, so views met later by scrolling don't wait
     /// out a stagger delay meant for it.
     @State private var revealSettled = false
+    @State private var detail: ShelfDetail?
+    @Namespace private var zoom
+    #if DEBUG
+    @State private var demoPushed = false
+    #endif
     let onOpen: (Book) -> Void
 
     init(onOpen: @escaping (Book) -> Void) {
@@ -29,20 +35,31 @@ struct ShelfView: View {
                         header
                             .padding(.horizontal, 20)
                             .padding(.bottom, 28)
+                        if let last = ShelfRing.lastRead(in: model.books) {
+                            continueCard(last)
+                                .staggeredReveal(revealSettled ? 0 : 1)
+                                // Another book read last is a new card, which arrives with its own reveal.
+                                .id(last.id)
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 28)
+                        }
                         SectionLabel(code: "COLLECTION / SHELF", title: "3D shelf")
-                            .staggeredReveal(1)
+                            .staggeredReveal(2)
                             .padding(.horizontal, 20)
-                        SpineShelf(books: model.books, settled: revealSettled, open: open)
+                        SpineShelf(books: model.books, settled: revealSettled, zoom: zoom) { open($0, from: .crest) }
                             .padding(.top, 4)
                         SectionLabel(code: "COLLECTION / LIST", title: "All books")
-                            .staggeredReveal(revealSettled ? 0 : 7)
+                            .staggeredReveal(revealSettled ? 0 : 8)
                             .padding(.horizontal, 20)
                             .padding(.top, 36)
                             .padding(.bottom, 4)
                         LazyVStack(alignment: .leading, spacing: 0) {
                             ForEach(Array(model.books.enumerated()), id: \.element.id) { index, item in
-                                ShelfRow(item: item, open: open)
-                                    .staggeredReveal(revealSettled ? 0 : index + 8)
+                                ShelfRow(item: item, zoom: zoom,
+                                         open: { open($0, from: .list) },
+                                         read: { onOpen($0.book) },
+                                         details: { show($0, from: .list) })
+                                    .staggeredReveal(revealSettled ? 0 : index + 9)
                             }
                         }
                         .padding(.horizontal, 20)
@@ -54,11 +71,18 @@ struct ShelfView: View {
             }
         }
         .paperBackground()
+        .navigationDestination(item: $detail) { route in
+            BookDetailView(bookId: route.bookId)
+                .modifier(ZoomOutOfCover(route: route, namespace: zoom))
+        }
         .task(id: model.books.isEmpty) {
             guard !model.books.isEmpty, !revealSettled,
                   (try? await Task.sleep(for: .seconds(1))) != nil else { return }
             revealSettled = true
         }
+        #if DEBUG
+        .task(id: [model.isImporting ? 1 : 0, model.books.count]) { await pushDemoDetail() }
+        #endif
     }
 
     private var header: some View {
@@ -66,22 +90,96 @@ struct ShelfView: View {
             .staggeredReveal(0)
     }
 
-    private func open(_ item: BookListItem) {
-        guard item.book.format != .pdf else {
-            withAnimation(Motion.animation(Motion.reveal, reduced: reduced)) {
-                model.toast = Toast(id: UUID(), message: "PDF reading arrives in a later build.", bookId: nil)
+    private func continueCard(_ item: BookListItem) -> some View {
+        ContinueCard(item: item, zoom: zoom) { onOpen(item.book) }
+            .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 8))
+            .contextMenu {
+                Button {
+                    show(item, from: .card)
+                } label: {
+                    Label { Text("Details") } icon: { MenuIcon.image(.info, scale: displayScale) }
+                }
             }
-            return
+    }
+
+    /// A tap on the crest or a row: the book's page, or the reader when "Open book directly" is on.
+    private func open(_ item: BookListItem, from source: ShelfDetail.Source) {
+        if model.settings.opensBookDirectly {
+            onOpen(item.book)
+        } else {
+            show(item, from: source)
         }
-        onOpen(item.book)
+    }
+
+    private func show(_ item: BookListItem, from source: ShelfDetail.Source) {
+        detail = ShelfDetail(bookId: item.id, source: source)
+    }
+
+    #if DEBUG
+    /// Waits for the demo library's imports, which reorder the shelf as each book lands.
+    private func pushDemoDetail() async {
+        guard !demoPushed, let n = DemoLaunch.detailIndex, !model.isImporting, !model.books.isEmpty,
+              (try? await Task.sleep(for: .seconds(1))) != nil,
+              model.books.indices.contains(n - 1) else { return }
+        demoPushed = true
+        show(model.books[n - 1], from: .list)
+    }
+    #endif
+}
+
+/// A detail page pushed from the shelf, and which cover it grows out of.
+struct ShelfDetail: Hashable {
+    enum Source: Hashable {
+        case card, crest, list
+    }
+
+    let bookId: UUID
+    let source: Source
+}
+
+/// A cover that a detail page zooms out of, and back into on the way back.
+struct CoverZoom {
+    let id: ShelfDetail
+    let namespace: Namespace.ID
+}
+
+extension View {
+    @ViewBuilder
+    func coverZoomSource(_ zoom: CoverZoom?) -> some View {
+        if let zoom {
+            matchedTransitionSource(id: zoom.id, in: zoom.namespace) { source in
+                source.clipShape(RoundedRectangle(cornerRadius: 4))
+            }
+        } else {
+            self
+        }
     }
 }
 
-/// One list row: tap to open, the round button or a long press for Remove (confirmed first)
-/// and, for TXT books, Re-detect chapters.
+/// Under reduced motion the page arrives with the default push instead.
+private struct ZoomOutOfCover: ViewModifier {
+    let route: ShelfDetail
+    let namespace: Namespace.ID
+    @Environment(\.motionReduced) private var reduced
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if reduced {
+            content
+        } else {
+            content.navigationTransition(.zoom(sourceID: route, in: namespace))
+        }
+    }
+}
+
+/// One list row. A tap opens the book's page (or the reader); the round button and a long press
+/// hold Continue, Details, Re-detect chapters for TXT books, and Remove (confirmed first).
 private struct ShelfRow: View {
     let item: BookListItem
+    let zoom: Namespace.ID
     let open: (BookListItem) -> Void
+    let read: (BookListItem) -> Void
+    let details: (BookListItem) -> Void
 
     @Environment(AppModel.self) private var model
     @Environment(\.displayScale) private var displayScale
@@ -90,7 +188,7 @@ private struct ShelfRow: View {
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
             Button { open(item) } label: {
-                BookRow(item: item)
+                BookRow(item: item, zoom: CoverZoom(id: ShelfDetail(bookId: item.id, source: .list), namespace: zoom))
             }
             .buttonStyle(PressableButtonStyle())
             VStack(spacing: 8) {
@@ -138,6 +236,21 @@ private struct ShelfRow: View {
 
     @ViewBuilder
     private var actions: some View {
+        Button {
+            read(item)
+        } label: {
+            Label {
+                item.progress == nil ? Text("Start reading") : Text("Continue")
+            } icon: {
+                MenuIcon.image(.play, scale: displayScale)
+            }
+        }
+        Button {
+            details(item)
+        } label: {
+            Label { Text("Details") } icon: { MenuIcon.image(.info, scale: displayScale) }
+        }
+        Divider()
         if item.book.format == .txt {
             Button {
                 Task { await model.resplit(item.id) }
