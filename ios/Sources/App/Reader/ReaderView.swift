@@ -98,6 +98,7 @@ struct ReaderView: View {
                 ReaderScreen.release()
             } else {
                 ReaderScreen.hold(model.readerPreferences)
+                if let reader { tracker?.ping(chapterIndex: reader.currentChapter) }
             }
         }
         .onChange(of: preferences.brightness) { holdScreen() }
@@ -252,6 +253,8 @@ struct ReaderView: View {
             position.scrollTo(id: reader.initialAnchor, anchor: .top)
             self.reader = reader
             tracker = ReadingSessionTracker(database: model.database, bookId: book.id)
+            // The first screen counts as reading before any scroll or tap.
+            tracker?.ping(chapterIndex: reader.currentChapter)
             if let jump { await land(jump, in: reader) }
         } catch {
             openFailed = true
