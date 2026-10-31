@@ -63,7 +63,7 @@ struct ImportView: View {
                 .font(.headline)
                 .foregroundStyle(Tokens.ink)
                 .accessibilityAddTraits(.isHeader)
-            if model.recentImports.isEmpty {
+            if model.importBatches.isEmpty {
                 Text("No imports yet")
                     .font(.subheadline)
                     .foregroundStyle(Tokens.inkSecondary)
@@ -74,8 +74,10 @@ struct ImportView: View {
                     }
             } else {
                 LazyVStack(spacing: 8) {
-                    ForEach(Array(model.recentImports.enumerated()), id: \.offset) { _, outcome in
-                        ImportOutcomeRow(outcome: outcome)
+                    ForEach(model.importBatches) { batch in
+                        ForEach(Array(batch.outcomes.enumerated()), id: \.offset) { _, outcome in
+                            ImportOutcomeRow(outcome: outcome)
+                        }
                     }
                 }
             }
@@ -89,8 +91,8 @@ struct ImportView: View {
             urls = picked
         case .failure(let error):
             if (error as? CocoaError)?.code != .userCancelled {
-                model.recentImports.insert(.failed(fileName: "", reason: .unreadable(error.localizedDescription)),
-                                           at: 0)
+                model.logFailures([.failed(fileName: "", reason: .unreadable(error.localizedDescription))],
+                                  origin: .picker)
             }
             return
         }
@@ -98,8 +100,8 @@ struct ImportView: View {
         isCopying = true
         Task {
             let batch = await ImportInbox.copy(urls)
-            await model.importFiles(batch.copies)
-            model.recentImports.insert(contentsOf: batch.failures, at: 0)
+            await model.importFiles(batch.copies, origin: .picker)
+            model.logFailures(batch.failures, origin: .picker)
             await ImportInbox.discard(batch.folders)
             isCopying = false
         }

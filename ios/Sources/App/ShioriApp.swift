@@ -23,6 +23,7 @@ struct ShioriApp: App {
                         #if DEBUG
                         await DemoLaunch.apply(to: model)
                         #endif
+                        await model.watchedFolder.scanOnLaunchIfNeeded(settings: model.importSettings)
                     }
             } else {
                 LaunchFailureView(detail: failure ?? "")
@@ -33,7 +34,7 @@ struct ShioriApp: App {
     private static func makeModel() throws -> AppModel {
         #if DEBUG
         if let demo = DemoLaunch.paths() {
-            return try AppModel.live(paths: demo)
+            return try AppModel.live(paths: demo, defaults: DemoLaunch.defaults())
         }
         #endif
         return try AppModel.live(paths: .standard())

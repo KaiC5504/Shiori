@@ -77,14 +77,18 @@ struct ImportOutcomeRow: View {
         switch outcome {
         case .added: Text("Added")
         case .alreadyInLibrary: Text("Already in library")
+        case .updated: Text("Updated")
+        case .resplit: Text("Re-detect chapters")
+        case .skipped: Text("Import")
         case .failed: Text("Failed")
         }
     }
 
     private var displayName: String {
         switch outcome {
-        case .added(_, let title), .alreadyInLibrary(_, let title): title
-        case .failed(let fileName, _): fileName
+        case .added(_, let title), .alreadyInLibrary(_, let title), .updated(_, let title, _),
+             .resplit(_, let title, _): title
+        case .skipped(let fileName, _), .failed(let fileName, _): fileName
         }
     }
 
@@ -92,6 +96,8 @@ struct ImportOutcomeRow: View {
         switch outcome {
         case .added: "checkmark.circle.fill"
         case .alreadyInLibrary: "books.vertical.fill"
+        case .updated, .resplit: "arrow.clockwise"
+        case .skipped: "info.circle"
         case .failed: "exclamationmark.triangle.fill"
         }
     }
