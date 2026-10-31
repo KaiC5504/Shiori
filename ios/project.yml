@@ -1,0 +1,88 @@
+name: Shiori
+
+options:
+  bundleIdPrefix: com.kaichuan
+  deploymentTarget:
+    iOS: "26.0"
+  developmentLanguage: en
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+# No `configFiles:`. A project-level xcconfig comes out of XcodeGen as a file reference
+# with no parent group, and the signing step (`xcode-project use-profiles`) dies reading
+# it. The team is written in by `xcode-project use-profiles`; the build number comes from
+# the command line.
+
+settings:
+  base:
+    # Swift 5 language mode on purpose: strict concurrency turns first bring-up into a
+    # wall of actor-isolation errors that cannot be iterated on without a Mac.
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    # A default only. CI overrides this per build; App Store Connect rejects a build
+    # number it has already seen.
+    CURRENT_PROJECT_VERSION: "1"
+    TARGETED_DEVICE_FAMILY: "1"
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    CODE_SIGN_STYLE: Automatic
+
+# Pure-Swift logic goes in local packages: ShioriCore is the only code `swift test` can
+# run on Windows. Both folders sit under ios/, which the Actions `paths:` filter covers.
+# packages:
+#   ShioriCore:
+#     path: Packages/ShioriCore
+#   ShioriLibrary:
+#     path: Packages/ShioriLibrary
+
+targets:
+  Shiori:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources/App
+    # dependencies:
+    #   - package: ShioriCore
+    #   - package: ShioriLibrary
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.kaichuan.shiori
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    info:
+      path: Generated/Shiori-Info.plist
+      properties:
+        CFBundleDisplayName: Shiori
+        CFBundleDevelopmentRegion: en
+        CFBundleLocalizations:
+          - en
+          - zh-Hans
+        # XcodeGen's defaults are the literals "1.0" and "1"; referencing the build
+        # settings is what lets CI vary the build number.
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleIconName: AppIcon
+        # Without this every upload sits in TestFlight as "Missing Compliance".
+        ITSAppUsesNonExemptEncryption: false
+        # The Documents folder shows in Files as "Shiori"; M3 offers it as the watched folder.
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        # Upload validation demands all four for iPad regardless of device family.
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+
+# Declared so `xcodebuild -scheme Shiori` works without Xcode ever having opened the
+# project to autocreate one.
+schemes:
+  Shiori:
+    build:
+      targets:
+        Shiori: all
+    run:
+      config: Debug
+    archive:
+      config: Release

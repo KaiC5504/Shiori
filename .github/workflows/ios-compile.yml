@@ -1,0 +1,112 @@
+name: iOS compile check
+
+# Unsigned simulator build, launch, screenshots. Needs no Apple account.
+# The signed device build lives in testflight.yml.
+
+# GitHub only has main; work branches stay local and are checked with tools/check-app.sh.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios-compile.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ios-compile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: xcode-27
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Toolchain
+        run: |
+          sudo xcode-select -s /Applications/Xcode_27.1.app
+          xcodebuild -version
+          xcodebuild -showsdks | grep -i iphone || true
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate project
+        run: cd ios && xcodegen generate
+
+      # Screenshots are reviewed at the 17 Pro Max's size (1320 x 2868), so ask for it by
+      # name; any other iPhone only keeps the check running.
+      - name: Boot a simulator
+        id: sim
+        run: |
+          read -r UDID NAME_OK NAME <<<"$(xcrun simctl list devices available -j | python3 -c "
+          import json, re, sys
+          devices = json.load(sys.stdin)['devices']
+          def version(runtime):
+              m = re.search(r'iOS-(\d+)-(\d+)(?:-(\d+))?$', runtime)
+              return tuple(int(x or 0) for x in m.groups()) if m else ()
+          runtimes = sorted((r for r in devices if version(r)), key=version, reverse=True)
+          for runtime in runtimes:
+              for d in devices[runtime]:
+                  if d['name'] == 'iPhone 17 Pro Max' and d['isAvailable']:
+                      print(d['udid'], 'yes', d['name']); sys.exit()
+          last = None
+          for runtime in runtimes:
+              for d in devices[runtime]:
+                  if 'iPhone' in d['name'] and d['isAvailable']:
+                      last = d
+          print(last['udid'], 'no', last['name'])
+          ")"
+          if [ "$NAME_OK" != yes ]; then
+            echo "::warning::No iPhone 17 Pro Max simulator on this image; using $NAME. Screenshot sizes will differ."
+          fi
+          echo "Booting $NAME ($UDID)"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl status_bar "$UDID" override --time 9:41 --batteryState charged --batteryLevel 100 || true
+
+      - name: Build for simulator
+        run: |
+          set -o pipefail
+          # Ad-hoc signed rather than CODE_SIGNING_ALLOWED=NO so entitlements still embed.
+          xcodebuild \
+            -project ios/Shiori.xcodeproj \
+            -scheme Shiori \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -configuration Debug \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=YES \
+            build
+
+      # Compiling only proves it parses. Launching proves the first screen does not
+      # crash, and the screenshots are the only look at the UI before TestFlight.
+      - name: Install, launch and screenshot
+        run: |
+          UDID="${{ steps.sim.outputs.udid }}"
+          APP=com.kaichuan.shiori
+          xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/Shiori.app
+          mkdir -p shots
+          xcrun simctl launch "$UDID" $APP
+          sleep 15
+          xcrun simctl io "$UDID" screenshot shots/01-first-launch.png
+          ls -la shots
+
+      - name: Collect crash reports
+        if: always()
+        run: |
+          mkdir -p shots/crashes
+          find ~/Library/Logs/DiagnosticReports -name "Shiori*" -exec cp {} shots/crashes/ \; 2>/dev/null || true
+          if [ -n "$(ls -A shots/crashes 2>/dev/null)" ]; then
+            echo "CRASHES FOUND:"; ls -la shots/crashes; head -60 shots/crashes/* || true
+          else
+            echo "no crash reports"
+          fi
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: simulator-screenshots
+          path: shots/
