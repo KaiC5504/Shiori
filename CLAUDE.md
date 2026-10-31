@@ -72,8 +72,8 @@ every manual step and known failures, is the global `ios-testflight` skill. Load
 before touching signing, `testflight.yml`, `ios/project.yml` or the compile workflow.
 
 Identity: app `Shiori`, scheme `Shiori`, bundle id `com.kaichuan.shiori` (extensions:
-none). Repo `KaiC5504/Shiori` (public). App Store Connect name: set in M1 Task 16, Apple
-ID: set in M1 Task 16. Runner: `xcode-27` with Xcode 27.1 (fallback `macos-26`, Xcode
+none). Repo `KaiC5504/Shiori` (public). App Store Connect name: `Shiori Library` ("Shiori
+Reader" was taken; the home-screen name is still "Shiori"), Apple ID `6829180488`. Runner: `xcode-27` with Xcode 27.1 (fallback `macos-26`, Xcode
 26.6). Screenshots come from an iPhone 17 Pro Max simulator.
 
 ### Branches (KaiC's rule)
