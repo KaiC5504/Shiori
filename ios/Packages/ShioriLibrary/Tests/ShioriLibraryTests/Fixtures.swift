@@ -1,5 +1,6 @@
 import Foundation
 @testable import ShioriLibrary
+import ZIPFoundation
 
 extension Book {
     static func fixture(title: String, addedAt seconds: TimeInterval) -> Book {
@@ -46,9 +47,29 @@ struct TestEnvironment {
     }
 
     func writeTXT(name: String, text: String, encoding: String.Encoding) throws -> URL {
-        let url = try freshFolder().appending(path: name)
         guard let data = text.data(using: encoding) else { throw CocoaError(.fileWriteInapplicableStringEncoding) }
+        return try writeFile(name: name, data: data)
+    }
+
+    func writeFile(name: String, data: Data) throws -> URL {
+        let url = try freshFolder().appending(path: name)
         try data.write(to: url)
+        return url
+    }
+
+    /// A ZIP that names itself an EPUB but has no `META-INF/container.xml`.
+    func writeEPUBWithoutContainer() throws -> URL {
+        let url = try freshFolder().appending(path: "无容器.epub")
+        let archive = try Archive(url: url, accessMode: .create)
+        let entries = [("mimetype", "application/epub+zip"),
+                       ("EPUB/chapter_1.xhtml", "<html><body><p>甲</p></body></html>")]
+        for (path, text) in entries {
+            let data = Data(text.utf8)
+            try archive.addEntry(with: path, type: .file, uncompressedSize: Int64(data.count),
+                                 compressionMethod: .none) { position, size in
+                data.subdata(in: Int(position)..<Int(position) + size)
+            }
+        }
         return url
     }
 }

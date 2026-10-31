@@ -33,3 +33,9 @@ import Testing
         .paragraph("甲乙丙"), .paragraph("丁"), .paragraph("戊"),
     ])
 }
+@Test func bomAndZeroWidthSpacesAreIgnored() throws {
+    let html = "\u{FEFF}<?xml version='1.0'?><html><body><h2>第一章</h2><p>\u{200B}</p><p>甲</p></body></html>"
+    #expect(try XHTMLContentParser.blocks(from: html, documentPath: "E/c.xhtml") == [
+        .heading("第一章", level: 2), .paragraph("甲"),
+    ])
+}

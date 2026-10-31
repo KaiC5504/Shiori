@@ -1,5 +1,6 @@
 import CryptoKit
 import Foundation
+import os
 import ShioriCore
 
 /// Copies a file into the library and indexes it (spec §8.3). An actor whose import runs
@@ -9,6 +10,7 @@ public actor BookImporter {
     private let database: LibraryDatabase
     private let paths: LibraryPaths
     private let rules: [ChapterRule]
+    private static let log = Logger(subsystem: "com.kaichuan.shiori", category: "import")
 
     static let epubLimit: Int64 = 512 << 20
     static let txtLimit: Int64 = 128 << 20
@@ -20,23 +22,43 @@ public actor BookImporter {
     }
 
     /// Removes half-built imports left by a crash or a kill; run on launch.
+    /// One stuck item doesn't stop the rest; the first error is thrown once all were tried.
     public func cleanStaging() throws {
         let fm = FileManager.default
         try fm.createDirectory(at: paths.staging, withIntermediateDirectories: true)
+        var firstError: Error?
         for item in try fm.contentsOfDirectory(at: paths.staging, includingPropertiesForKeys: nil) {
-            try fm.removeItem(at: item)
+            do {
+                try fm.removeItem(at: item)
+            } catch {
+                if firstError == nil { firstError = error }
+            }
         }
+        if let firstError { throw firstError }
     }
 
     public func importFile(at url: URL) async -> ImportOutcome {
         let fileName = url.lastPathComponent
+        let ext = url.pathExtension.lowercased()
         do {
             return try importOrThrow(url)
         } catch let failure as ImportFailure {
+            Self.log.error("import of .\(ext, privacy: .public) failed: \(String(describing: failure), privacy: .public)")
             return .failed(fileName: fileName, reason: failure)
         } catch {
+            Self.log.error("import of .\(ext, privacy: .public) failed: \(Self.loggable(error), privacy: .public)")
             return .failed(fileName: fileName, reason: .unreadable(String(describing: error)))
         }
+    }
+
+    /// Cocoa and POSIX errors print the file's path, so for those only the domain and code
+    /// are logged.
+    private static func loggable(_ error: Error) -> String {
+        let ns = error as NSError
+        if ns.domain == NSCocoaErrorDomain || ns.domain == NSPOSIXErrorDomain {
+            return "\(ns.domain) \(ns.code)"
+        }
+        return String(describing: error)
     }
 
     private struct Parsed {

@@ -15,9 +15,9 @@ private func makeContent(blocks: Int) -> ChapterContent {
     ChapterContent(blocks: [.heading("第一章", level: 2)] + (1..<blocks).map { .paragraph("第\($0)段，山间的风。") })
 }
 
-private func saved(index: Int, keyTitle: String) -> ShioriLibrary.Progress {
-    ShioriLibrary.Progress(bookId: bookId, chapterIndex: index, keyTitle: keyTitle, keyOccurrence: 0, offset: 0,
-                           fraction: 0, updatedAt: Date(timeIntervalSince1970: 0))
+private func saved(index: Int, keyTitle: String, occurrence: Int = 0) -> ShioriLibrary.Progress {
+    ShioriLibrary.Progress(bookId: bookId, chapterIndex: index, keyTitle: keyTitle, keyOccurrence: occurrence,
+                           offset: 0, fraction: 0, updatedAt: Date(timeIntervalSince1970: 0))
 }
 
 @Test func fractionCountsChaptersAndBlocks() {
@@ -37,6 +37,17 @@ private func saved(index: Int, keyTitle: String) -> ShioriLibrary.Progress {
     // A re-import put two new chapters in front of the one being read.
     let chapters = makeChapters(10)
     #expect(ReadingPosition.chapterIndex(for: saved(index: 3, keyTitle: "第6章"), in: chapters) == 5)
+}
+
+@Test func restoresTheRightRepeatedTitle() {
+    let chapters = (0..<10).map { n in
+        let extra = (4...6).contains(n)
+        let title = extra ? "番外" : "第\(n + 1)章"
+        return Chapter(bookId: bookId, index: n, title: title, volume: nil, keyTitle: title,
+                       keyOccurrence: extra ? n - 4 : 0, source: "OEBPS/c\(n).xhtml")
+    }
+    #expect(ReadingPosition.chapterIndex(for: saved(index: 9, keyTitle: "番外", occurrence: 1), in: chapters) == 5)
+    #expect(ReadingPosition.chapterIndex(for: saved(index: 5, keyTitle: "番外", occurrence: 2), in: chapters) == 6)
 }
 
 @Test func fallsBackToClampedIndex() {

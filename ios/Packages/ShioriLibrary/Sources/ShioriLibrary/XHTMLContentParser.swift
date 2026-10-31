@@ -6,7 +6,8 @@ import SwiftSoup
 /// `&nbsp;` and tags that aren't well-formed, which a strict XML parser would reject.
 public enum XHTMLContentParser {
     public static func blocks(from html: String, documentPath: String) throws -> [ChapterBlock] {
-        let document = try SwiftSoup.parse(html)
+        // A BOM before `<?xml` would otherwise become body text.
+        let document = try SwiftSoup.parse(html.hasPrefix("\u{FEFF}") ? String(html.dropFirst()) : html)
         guard let body = document.body() else { return [] }
         var collector = Collector(documentPath: documentPath)
         collector.visitChildren(of: body)
@@ -90,12 +91,15 @@ public enum XHTMLContentParser {
     }
 
     /// Collapses runs of ASCII whitespace and no-break spaces to one space, then trims those
-    /// and the full-width spaces web novels indent paragraphs with.
+    /// and the full-width spaces web novels indent paragraphs with. Drops stray BOMs and
+    /// zero-width spaces, which would otherwise make an invisible paragraph.
     static func clean(_ raw: String) -> String {
         var out = String.UnicodeScalarView()
         var inSpace = false
         for scalar in raw.unicodeScalars {
             switch scalar {
+            case "\u{FEFF}", "\u{200B}":
+                continue
             case " ", "\t", "\n", "\r", "\u{0C}", "\u{00A0}":
                 inSpace = true
             default:
