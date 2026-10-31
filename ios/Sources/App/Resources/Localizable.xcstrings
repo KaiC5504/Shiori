@@ -62,6 +62,16 @@
         }
       }
     },
+    "Couldn't open this book.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法打开这本书。"
+          }
+        }
+      }
+    },
     "Couldn't open this chapter.": {
       "localizations": {
         "zh-Hans": {
