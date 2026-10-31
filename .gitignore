@@ -22,3 +22,6 @@ xcuserdata/
 Thumbs.db
 __pycache__/
 *.pyc
+
+# Agent worktrees made by Claude Code sessions.
+/.claude/worktrees/
