@@ -1686,6 +1686,16 @@
         }
       }
     },
+    "Next page": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一页"
+          }
+        }
+      }
+    },
     "Night": {
       "localizations": {
         "en": {
@@ -1992,6 +2002,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "上一章"
+          }
+        }
+      }
+    },
+    "Previous page": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上一页"
           }
         }
       }
