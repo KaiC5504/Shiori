@@ -70,8 +70,14 @@ struct RootView: View {
         .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.bottom } action: { bottomInset = $0 }
         .background(Tokens.paper.ignoresSafeArea())
         .fullScreenCover(item: $model.openBook) { book in
-            ReaderView(book: book, showContents: Self.demoShowsContents)
-                .environment(model)
+            Group {
+                if book.format == .pdf {
+                    PDFReaderView(book: book)
+                } else {
+                    ReaderView(book: book, showContents: Self.demoShowsContents)
+                }
+            }
+            .environment(model)
         }
     }
 

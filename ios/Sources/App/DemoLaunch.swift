@@ -34,6 +34,19 @@ enum DemoLaunch {
         arguments.object(forKey: "DemoJumpTo") == nil ? nil : arguments.integer(forKey: "DemoJumpTo")
     }
 
+    /// 1-based position on the shelf whose detail page is pushed.
+    static var detailIndex: Int? {
+        let n = arguments.integer(forKey: "DemoDetail")
+        return n > 0 ? n : nil
+    }
+
+    /// Text the contents search opens with.
+    static var contentsQuery: String? { arguments.string(forKey: "DemoContentsQuery") }
+    /// The first illustration the reader shows opens the zoom viewer.
+    static var opensImageViewer: Bool { arguments.bool(forKey: "DemoImageViewer") }
+    /// "YES" imports a generated PDF and opens it; "thumbs" also opens its thumbnail grid.
+    static var pdf: String? { arguments.string(forKey: "DemoPDF") }
+
     static var tab: AppTab? {
         switch arguments.string(forKey: "DemoTab") {
         case "shelf": .shelf
@@ -75,6 +88,12 @@ enum DemoLaunch {
         if let theme = arguments.string(forKey: "DemoTheme").flatMap(ReaderTheme.init) {
             model.readerPreferences.theme = theme
         }
+        if let layout = arguments.string(forKey: "DemoLayout").flatMap(ReaderLayout.init) {
+            model.readerPreferences.layout = layout
+        }
+        if let effect = arguments.string(forKey: "DemoEffect").flatMap(PageTurnEffect.init) {
+            model.readerPreferences.effect = effect
+        }
         let kept = keepsLibrary && !((try? model.database.bookList())?.isEmpty ?? true)
         if usesDemoData, !kept {
             let sources = model.paths.root.deletingLastPathComponent().appending(path: "Sources")
@@ -109,6 +128,16 @@ enum DemoLaunch {
         }
         if showsImportResults {
             model.logFailures(sampleOutcomes, origin: .picker)
+        }
+        if pdf != nil {
+            let url = model.paths.root.deletingLastPathComponent().appending(path: "Sources/示例.pdf")
+            if (try? model.database.bookList())?.contains(where: { $0.book.format == .pdf }) != true {
+                try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(),
+                                                         withIntermediateDirectories: true)
+                try? DemoPDF.write(to: url)
+                await model.importFiles([url], origin: .picker)
+            }
+            model.openBook = (try? model.database.bookList())?.first { $0.book.format == .pdf }?.book
         }
         if let readerIndex, let list = try? model.database.bookList(), list.indices.contains(readerIndex - 1) {
             model.openBook = list[readerIndex - 1].book

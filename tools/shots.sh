@@ -44,6 +44,14 @@ shoot 14-appearance 12 -DemoTab shelf -DemoReader 1 -DemoAppearance YES
 shoot 14b-appearance-more 12 -DemoTab shelf -DemoReader 1 -DemoAppearance YES -DemoAppearancePage more
 shoot 14c-appearance-fonts 12 -DemoTab shelf -DemoReader 1 -DemoAppearance YES -DemoAppearancePage fonts
 shoot 15-reader-parchment 12 -DemoTab shelf -DemoReader 1 -DemoTheme parchment
+shoot 18-detail 12 -DemoTab shelf -DemoDetail 1
+shoot 19-contents-search 14 -DemoTab shelf -DemoLongBook YES -DemoReader 1 -DemoContents YES -DemoContentsQuery 120
+shoot 20-illustration 12 -DemoTab shelf -DemoReader 1 -DemoJumpTo 2
+shoot 21-image-viewer 12 -DemoTab shelf -DemoReader 1 -DemoJumpTo 2 -DemoImageViewer YES
+shoot 22-pdf 12 -DemoTab shelf -DemoPDF YES
+shoot 22b-pdf-thumbnails 12 -DemoTab shelf -DemoPDF thumbs
+shoot 23-screen 12 -DemoTab shelf -DemoReader 1 -DemoAppearance YES -DemoAppearancePage screen
+shoot 24-paged 12 -DemoTab shelf -DemoReader 1 -DemoLayout paged
 
 xcrun simctl ui "$UDID" appearance dark
 shoot 04-shelf-dark 10 -DemoTab shelf -DemoUpdated YES
@@ -53,5 +61,7 @@ shoot 08-icons-dark 8 -DemoIcons YES
 shoot 10-accent-dark 8 -DemoTab settings -DemoSettingsPage accent -DemoAccent sealVermilion
 shoot 12-import-folder-dark 12 -DemoTab imports -DemoWatchedFolder YES -DemoImportResults YES
 shoot 13-reader-chrome-dark 12 -DemoTab shelf -DemoReader 1 -DemoChrome YES -DemoTheme night
+shoot 18-detail-dark 12 -DemoTab shelf -DemoDetail 1
+shoot 24-paged-dark 12 -DemoTab shelf -DemoReader 1 -DemoLayout paged -DemoTheme night
 xcrun simctl ui "$UDID" appearance light
 ls "$OUT"

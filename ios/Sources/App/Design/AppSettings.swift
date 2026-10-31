@@ -108,6 +108,11 @@ final class AppSettings {
         didSet { defaults.set(haptics, forKey: Keys.haptics) }
     }
 
+    /// Tapping a book on the shelf opens the reader rather than its detail page (spec §9).
+    var opensBookDirectly: Bool {
+        didSet { defaults.set(opensBookDirectly, forKey: Keys.opensBookDirectly) }
+    }
+
     init(defaults: UserDefaults) {
         self.defaults = defaults
         language = defaults.string(forKey: Keys.language).flatMap(AppLanguage.init) ?? .system
@@ -116,6 +121,7 @@ final class AppSettings {
             .flatMap { try? JSONDecoder().decode(AccentChoice.self, from: $0) } ?? .preset(.ink)
         reduceMotion = defaults.bool(forKey: Keys.reduceMotion)
         haptics = defaults.object(forKey: Keys.haptics) as? Bool ?? true
+        opensBookDirectly = defaults.bool(forKey: Keys.opensBookDirectly)
     }
 
     var locale: Locale? { language.locale }
@@ -134,5 +140,6 @@ final class AppSettings {
         static let accent = "settings.accent"
         static let reduceMotion = "settings.reduceMotion"
         static let haptics = "settings.haptics"
+        static let opensBookDirectly = "settings.opensBookDirectly"
     }
 }

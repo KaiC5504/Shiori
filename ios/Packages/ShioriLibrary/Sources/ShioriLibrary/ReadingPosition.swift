@@ -12,6 +12,18 @@ public enum ReadingPosition {
                         fraction: min(max(fraction, 0), 1), updatedAt: now)
     }
 
+    /// For the paged layout, which keeps a character offset rather than a block.
+    /// fraction = (chapterIndex + offset / max(plainText length, 1)) / chapterCount
+    public static func progress(bookId: UUID, chapter: Chapter, chapterCount: Int,
+                                content: ChapterContent, offset: Int, now: Date) -> Progress {
+        let length = content.plainText.utf16.count
+        let clamped = min(max(offset, 0), length)
+        let fraction = (Double(chapter.index) + Double(clamped) / Double(max(length, 1))) / Double(max(chapterCount, 1))
+        return Progress(bookId: bookId, chapterIndex: chapter.index, keyTitle: chapter.keyTitle,
+                        keyOccurrence: chapter.keyOccurrence, offset: clamped,
+                        fraction: min(max(fraction, 0), 1), updatedAt: now)
+    }
+
     /// The chapter matching the saved key, else the saved index clamped to the book.
     public static func chapterIndex(for progress: Progress, in chapters: [Chapter]) -> Int {
         guard !chapters.isEmpty else { return 0 }

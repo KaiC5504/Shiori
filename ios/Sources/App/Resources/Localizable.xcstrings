@@ -2,6 +2,34 @@
   "sourceLanguage": "en",
   "version": "1.0",
   "strings": {
+    "%lld chapters": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld chapter"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld chapters"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共 %lld 章"
+          }
+        }
+      }
+    },
     "%lld chapters detected": {
       "localizations": {
         "zh-Hans": {
@@ -292,6 +320,36 @@
         }
       }
     },
+    "Book details": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "图书详情"
+          }
+        }
+      }
+    },
+    "Books by %@": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 的作品"
+          }
+        }
+      }
+    },
+    "Both sides go forward": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "两侧都翻到下一页"
+          }
+        }
+      }
+    },
     "Bottom": {
       "localizations": {
         "en": {
@@ -304,6 +362,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "底部"
+          }
+        }
+      }
+    },
+    "Brightness": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "亮度"
+          }
+        }
+      }
+    },
+    "Brisk": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "轻快"
           }
         }
       }
@@ -478,6 +556,16 @@
         }
       }
     },
+    "Continue": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "继续阅读"
+          }
+        }
+      }
+    },
     "Couldn't change the icon.": {
       "localizations": {
         "en": {
@@ -556,6 +644,16 @@
         }
       }
     },
+    "Couldn't save the image.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法存储图片。"
+          }
+        }
+      }
+    },
     "Cream and rose": {
       "localizations": {
         "en": {
@@ -584,6 +682,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "奶白青蓝"
+          }
+        }
+      }
+    },
+    "Crop margins": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "裁切白边"
+          }
+        }
+      }
+    },
+    "Curl": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仿真翻页"
           }
         }
       }
@@ -656,6 +774,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "默认"
+          }
+        }
+      }
+    },
+    "Details": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "详情"
           }
         }
       }
@@ -798,6 +926,16 @@
         }
       }
     },
+    "Follow system": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "跟随系统"
+          }
+        }
+      }
+    },
     "Font": {
       "localizations": {
         "en": {
@@ -882,6 +1020,16 @@
         }
       }
     },
+    "Gentle": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "舒缓"
+          }
+        }
+      }
+    },
     "Graphite": {
       "localizations": {
         "zh-Hans": {
@@ -944,6 +1092,26 @@
         }
       }
     },
+    "Hide status bar": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "隐藏状态栏"
+          }
+        }
+      }
+    },
+    "Illustration": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "插图"
+          }
+        }
+      }
+    },
     "Import": {
       "localizations": {
         "zh-Hans": {
@@ -984,6 +1152,16 @@
         }
       }
     },
+    "Imported %@": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入于 %@"
+          }
+        }
+      }
+    },
     "Imported “%@”": {
       "localizations": {
         "zh-Hans": {
@@ -1000,6 +1178,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "正在导入…"
+          }
+        }
+      }
+    },
+    "In order": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正序"
           }
         }
       }
@@ -1102,6 +1290,16 @@
         }
       }
     },
+    "Keep screen awake": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保持屏幕常亮"
+          }
+        }
+      }
+    },
     "Language": {
       "localizations": {
         "zh-Hans": {
@@ -1144,6 +1342,16 @@
         }
       }
     },
+    "Last read": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上次阅读"
+          }
+        }
+      }
+    },
     "Last scan %@": {
       "localizations": {
         "zh-Hans": {
@@ -1170,6 +1378,16 @@
         }
       }
     },
+    "Layout": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "版式"
+          }
+        }
+      }
+    },
     "Left": {
       "localizations": {
         "en": {
@@ -1182,6 +1400,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "左侧"
+          }
+        }
+      }
+    },
+    "Left-handed": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "左手"
           }
         }
       }
@@ -1438,6 +1666,16 @@
         }
       }
     },
+    "No chapters match": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有匹配的章节"
+          }
+        }
+      }
+    },
     "No chapters were found.": {
       "localizations": {
         "zh-Hans": {
@@ -1520,6 +1758,16 @@
         }
       }
     },
+    "Open book directly": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "直接打开书籍"
+          }
+        }
+      }
+    },
     "PDF reading arrives in a later build.": {
       "localizations": {
         "zh-Hans": {
@@ -1542,6 +1790,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "页面"
+          }
+        }
+      }
+    },
+    "Page %lld": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "第 %lld 页"
+          }
+        }
+      }
+    },
+    "Page by page": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "逐页翻阅"
+          }
+        }
+      }
+    },
+    "Page turn": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "翻页方式"
           }
         }
       }
@@ -1574,6 +1852,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "段距"
+          }
+        }
+      }
+    },
+    "Paragraph relay": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "段落接续"
           }
         }
       }
@@ -1712,6 +2000,36 @@
         }
       }
     },
+    "Reading now": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在阅读"
+          }
+        }
+      }
+    },
+    "Reading time %@": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "阅读时长 %@"
+          }
+        }
+      }
+    },
+    "Reading: %@": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "读到 %@"
+          }
+        }
+      }
+    },
     "Recent imports": {
       "localizations": {
         "zh-Hans": {
@@ -1804,6 +2122,16 @@
         }
       }
     },
+    "Reversed": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "倒序"
+          }
+        }
+      }
+    },
     "Ribbon violet": {
       "localizations": {
         "zh-Hans": {
@@ -1826,6 +2154,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "右侧"
+          }
+        }
+      }
+    },
+    "Right-handed": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "右手"
           }
         }
       }
@@ -1872,6 +2210,26 @@
         }
       }
     },
+    "Save to Photos": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "存储到照片"
+          }
+        }
+      }
+    },
+    "Saved to Photos": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已存储到照片"
+          }
+        }
+      }
+    },
     "Scan now": {
       "localizations": {
         "zh-Hans": {
@@ -1892,12 +2250,42 @@
         }
       }
     },
+    "Screen and gestures": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "屏幕与手势"
+          }
+        }
+      }
+    },
+    "Scroll": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "滚动"
+          }
+        }
+      }
+    },
     "Seal vermilion": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "印泥朱"
+          }
+        }
+      }
+    },
+    "Search chapters": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索章节"
           }
         }
       }
@@ -1954,6 +2342,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "显示全部 %lld 条"
+          }
+        }
+      }
+    },
+    "Show battery": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示电量"
           }
         }
       }
@@ -2016,6 +2414,16 @@
         }
       }
     },
+    "Speed": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "速度"
+          }
+        }
+      }
+    },
     "Standard": {
       "localizations": {
         "en": {
@@ -2028,6 +2436,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "标准"
+          }
+        }
+      }
+    },
+    "Start reading": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开始阅读"
+          }
+        }
+      }
+    },
+    "Swipe up or down along the left edge to change brightness.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "沿左侧边缘上下滑动可调节亮度。"
           }
         }
       }
@@ -2064,6 +2492,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "TXT 设置"
+          }
+        }
+      }
+    },
+    "Tap zones": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点击区域"
+          }
+        }
+      }
+    },
+    "Tapping a book opens the reader instead of its details.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点击书籍时直接进入阅读，跳过详情页。"
           }
         }
       }
@@ -2148,6 +2596,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "此书受 DRM 保护，无法导入。"
+          }
+        }
+      }
+    },
+    "Thumbnails": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "缩略图"
           }
         }
       }
@@ -2258,6 +2716,16 @@
         }
       }
     },
+    "Vertical scroll": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "纵向滚动"
+          }
+        }
+      }
+    },
     "Volumes (第X卷)": {
       "localizations": {
         "zh-Hans": {
@@ -2342,6 +2810,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "麦色"
+          }
+        }
+      }
+    },
+    "Whole book %@": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全书 %@"
           }
         }
       }

@@ -87,6 +87,17 @@ public final class LibraryDatabase: Sendable {
                 t.column("scannedAt", .datetime).notNull()
             }
         }
+        migrator.registerMigration("v3") { db in
+            try db.create(table: "readingSession") { t in
+                t.autoIncrementedPrimaryKey("id")
+                t.column("bookId", .blob).notNull().indexed().references("book", onDelete: .cascade)
+                t.column("startedAt", .datetime).notNull()
+                t.column("endedAt", .datetime).notNull()
+                t.column("seconds", .integer).notNull()
+                t.column("firstChapter", .integer).notNull()
+                t.column("lastChapter", .integer).notNull()
+            }
+        }
         return migrator
     }
 
@@ -112,6 +123,12 @@ public final class LibraryDatabase: Sendable {
     public func chapters(bookId: UUID) throws -> [Chapter] {
         try queue.read { db in
             try Chapter.filter(Column("bookId") == bookId).order(Column("index")).fetchAll(db)
+        }
+    }
+
+    public func chapter(bookId: UUID, index: Int) throws -> Chapter? {
+        try queue.read { db in
+            try Chapter.fetchOne(db, key: ["bookId": bookId, "index": index])
         }
     }
 

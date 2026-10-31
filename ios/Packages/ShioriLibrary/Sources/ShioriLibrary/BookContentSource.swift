@@ -8,7 +8,7 @@ public enum BookContentError: Error, Equatable {
 public final class BookContentSource: Sendable {
     private let book: Book
     private let directory: URL
-    private let archive: EPUBArchive?
+    let archive: EPUBArchive?
 
     public init(book: Book, paths: LibraryPaths) throws {
         self.book = book

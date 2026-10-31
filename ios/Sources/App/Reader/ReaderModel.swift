@@ -2,6 +2,7 @@ import Foundation
 import Observation
 import os
 import ShioriLibrary
+import SwiftUI
 
 private let readerLog = Logger(subsystem: "com.kaichuan.shiori", category: "reader")
 
@@ -11,12 +12,19 @@ struct ParagraphAnchor: Hashable, Sendable {
     var block: Int
 }
 
+/// An illustration in the text. `aspect` (width / height) is read from the image header when
+/// the chapter loads, so the row's height is fixed before the picture arrives.
+struct ReaderImage: Hashable, Sendable {
+    let path: String
+    let aspect: CGFloat?
+}
+
 struct ReaderRow: Identifiable, Equatable, Sendable {
     enum Kind: Equatable, Sendable {
         case title(String)
         case heading(String, level: Int)
         case paragraph(String)
-        case image
+        case image(ReaderImage)
         case unreadable(title: String)
         case empty
     }
@@ -27,7 +35,8 @@ struct ReaderRow: Identifiable, Equatable, Sendable {
     /// title, so a chapter scrolled to the top starts right under the safe area.
     let endsChapter: Bool
 
-    static func rows(chapter: Int, title: String, content: ChapterContent?) -> [ReaderRow] {
+    static func rows(chapter: Int, title: String, content: ChapterContent?,
+                     imageSize: (String) -> CGSize? = { _ in nil }) -> [ReaderRow] {
         let first = ParagraphAnchor(chapter: chapter, block: 0)
         guard let content else { return [ReaderRow(id: first, kind: .unreadable(title: title), endsChapter: true)] }
         guard !content.blocks.isEmpty else { return [ReaderRow(id: first, kind: .empty, endsChapter: true)] }
@@ -37,7 +46,9 @@ struct ReaderRow: Identifiable, Equatable, Sendable {
             switch block {
             case .heading(let text, let level): kind = index == 0 ? .title(text) : .heading(text, level: level)
             case .paragraph(let text): kind = .paragraph(text)
-            case .image: kind = .image
+            case .image(let path):
+                let aspect = imageSize(path).flatMap { $0.width > 0 && $0.height > 0 ? $0.width / $0.height : nil }
+                kind = .image(ReaderImage(path: path, aspect: aspect))
             }
             return ReaderRow(id: ParagraphAnchor(chapter: chapter, block: index), kind: kind,
                              endsChapter: index == last)
@@ -78,6 +89,10 @@ final class ReaderModel {
     /// The chapters in `displayed`, in order.
     private(set) var rows: [ReaderRow] = []
     private(set) var currentChapter: Int
+
+    /// True while a jump or a held place is landing; nothing the scroll reports then is a
+    /// place the reader has been.
+    var isSettling: Bool { isJumping }
 
     private let database: LibraryDatabase
     private let source: BookContentSource
@@ -250,6 +265,25 @@ final class ReaderModel {
                                         block: anchor.block, now: .now)
     }
 
+    func imageData(at path: String) async -> Data? {
+        let source = source
+        return await Task.detached(priority: .userInitiated) {
+            do {
+                return try source.imageData(at: path)
+            } catch {
+                readerLog.error("image \(path) failed to load: \(error)")
+                return nil
+            }
+        }.value
+    }
+
+    /// The chapter's illustrations in reading order, from its loaded rows.
+    func images(inChapter chapter: Int) -> [ReaderImage] {
+        (loaded[chapter]?.rows ?? []).compactMap { row in
+            if case .image(let image) = row.kind { image } else { nil }
+        }
+    }
+
     /// Rows are only ever added while reading. Dropping or swapping a chapter above the
     /// viewport changes the height above the text, which is what made it jump.
     private func extendIfNeeded() {
@@ -312,9 +346,16 @@ final class ReaderModel {
                 readerLog.error("chapter \(index) failed to load: \(error)")
             }
             return LoadedChapter(content: content,
-                                 rows: ReaderRow.rows(chapter: index, title: chapter.title, content: content))
+                                 rows: ReaderRow.rows(chapter: index, title: chapter.title, content: content,
+                                                      imageSize: source.imageSize(at:)))
         }
         inFlight[index] = task
         return task
     }
+}
+
+extension EnvironmentValues {
+    @Entry var readerModel: ReaderModel? = nil
+    /// Opens the zoom viewer over the reader.
+    @Entry var openReaderImage: ((ImageViewerRequest) -> Void)? = nil
 }

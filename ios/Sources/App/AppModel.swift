@@ -22,6 +22,8 @@ final class AppModel {
     var selectedTab: AppTab = .shelf
     /// Non-nil presents the reader full screen.
     var openBook: Book?
+    /// A 0-based chapter the next reader opened jumps to, instead of the saved place.
+    var openChapter: Int?
     var toast: Toast?
 
     @ObservationIgnored private let defaults: UserDefaults

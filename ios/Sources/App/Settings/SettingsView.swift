@@ -90,6 +90,11 @@ struct SettingsView: View {
         }
         .shioriHaptic(.selection, trigger: settings.language)
         SettingsDivider()
+        SettingsToggleRow("Open book directly",
+                          footnote: Text("Tapping a book opens the reader instead of its details."),
+                          isOn: $settings.opensBookDirectly)
+            .shioriHaptic(.selection, trigger: settings.opensBookDirectly)
+        SettingsDivider()
         SettingsToggleRow("Haptics", isOn: $settings.haptics)
             .shioriHaptic(.selection, trigger: settings.haptics)
     }

@@ -19,6 +19,8 @@ struct ReaderView: View {
     @State private var viewport: CGRect = .zero
     @State private var safeArea = EdgeInsets()
     @State private var footerHeight: CGFloat = 0
+    @State private var tracker: ReadingSessionTracker?
+    @State private var viewing: ImageViewerRequest?
 
     /// Closes by setting `model.openBook = nil`.
     init(book: Book, showContents: Bool = false) {
@@ -66,12 +68,24 @@ struct ReaderView: View {
                     .presentationBackgroundInteraction(.enabled(upThrough: .medium))
             }
         }
+        .fullScreenCover(item: $viewing) { request in
+            ImageViewer(request: request)
+                .environment(\.readerModel, reader)
+        }
+        .environment(\.readerModel, reader)
+        .environment(\.openReaderImage) { viewing = $0 }
         .task { await open() }
-        .onDisappear { reader?.saveNow() }
+        .onDisappear {
+            reader?.saveNow()
+            tracker?.stop()
+        }
         .onChange(of: scenePhase) { _, phase in
             // The app switcher only makes the scene inactive, and a swipe-kill from there
             // never reaches the background, so inactive has to save too.
-            if phase != .active { reader?.saveNow() }
+            if phase != .active {
+                reader?.saveNow()
+                tracker?.pause()
+            }
         }
     }
 
@@ -87,7 +101,10 @@ struct ReaderView: View {
         // One signal only: a second one disagrees with it at chapter breaks and flips the
         // current chapter back and forth.
         .onChange(of: position.viewID(type: ParagraphAnchor.self)) { _, anchor in
-            if let anchor { reader.visibleAnchorChanged(anchor) }
+            if let anchor {
+                reader.visibleAnchorChanged(anchor)
+                tracker?.ping(chapterIndex: anchor.chapter)
+            }
         }
         .onChange(of: model.readerPreferences.typography) { keepPlace(in: reader) }
         .onChange(of: viewport.width) { keepPlace(in: reader) }
@@ -205,6 +222,7 @@ struct ReaderView: View {
             // Set before the scroll view exists, so its first layout is already at the paragraph.
             position.scrollTo(id: reader.initialAnchor, anchor: .top)
             self.reader = reader
+            tracker = ReadingSessionTracker(database: model.database, bookId: book.id)
             if let jump { await land(jump, in: reader) }
         } catch {
             openFailed = true
@@ -213,6 +231,10 @@ struct ReaderView: View {
         #if DEBUG
         if DemoLaunch.showsChrome { showsChrome = true }
         #endif
+        if let chapter = model.openChapter {
+            model.openChapter = nil
+            jump(to: chapter)
+        }
         if showContents {
             // A sheet asked for while the full-screen cover is still sliding in is dropped.
             try? await Task.sleep(for: .milliseconds(600))
@@ -256,6 +278,7 @@ struct ReaderView: View {
 
     private func close() {
         reader?.saveNow()
+        tracker?.stop()
         model.openBook = nil
     }
 
@@ -272,6 +295,7 @@ struct ReaderView: View {
     }
 
     private func tap(at point: CGPoint) {
+        if let reader { tracker?.ping(chapterIndex: reader.currentChapter) }
         // Only the Aa sheet lets taps through to the page; one closes it like a tap outside.
         if sheet != nil {
             sheet = nil

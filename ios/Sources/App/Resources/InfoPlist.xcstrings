@@ -1,0 +1,24 @@
+{
+  "sourceLanguage": "en",
+  "version": "1.0",
+  "strings": {
+    "NSPhotoLibraryAddUsageDescription": {
+      "comment": "Asked once, when Save in the illustration viewer is first tapped.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shiori saves the illustrations you choose to Photos."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shiori 会把你选择的插图存储到照片。"
+          }
+        }
+      }
+    }
+  }
+}

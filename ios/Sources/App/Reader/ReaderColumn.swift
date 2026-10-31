@@ -87,14 +87,8 @@ private struct ReaderRowView: View, Equatable {
                 .padding(.bottom, max(style.paragraphGap, style.size))
         case .paragraph(let text):
             paragraph(text)
-        case .image:
-            Image(systemName: "photo")
-                .font(.title2)
-                .foregroundStyle(style.secondaryInk)
-                .frame(maxWidth: .infinity, minHeight: 96)
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(style.secondaryInk.opacity(0.35)))
-                .padding(.bottom, style.paragraphGap)
-                .accessibilityHidden(true)
+        case .image(let image):
+            ReaderImageRow(image: image, chapter: row.id.chapter, style: style)
         case .unreadable(let chapterTitle):
             VStack(alignment: .leading, spacing: 0) {
                 if !chapterTitle.isEmpty { title(chapterTitle) }

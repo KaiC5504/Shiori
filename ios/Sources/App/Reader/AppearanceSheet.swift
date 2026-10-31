@@ -14,7 +14,7 @@ struct AppearanceSheet: View {
         #if DEBUG
         let page = DemoLaunch.appearancePage
         _showsFonts = State(initialValue: page == "fonts")
-        _detent = State(initialValue: page == "more" ? .large : .medium)
+        _detent = State(initialValue: page == "more" || page == "screen" ? .large : .medium)
         #else
         _showsFonts = State(initialValue: false)
         _detent = State(initialValue: .medium)
@@ -74,24 +74,37 @@ private struct AppearanceForm: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    textSection.staggeredReveal(0)
-                    spacingSection.staggeredReveal(1)
-                    paperSection.staggeredReveal(2)
-                    typeSection.staggeredReveal(3)
-                    paragraphSection.staggeredReveal(4)
-                    marginSection.staggeredReveal(5)
-                    pageSection.staggeredReveal(6)
-                    resetButton.staggeredReveal(7)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 18) {
+                        textSection.staggeredReveal(0)
+                        spacingSection.staggeredReveal(1)
+                        paperSection.staggeredReveal(2)
+                        PageTurnSection(preferences: preferences).staggeredReveal(3)
+                        typeSection.staggeredReveal(4)
+                        paragraphSection.staggeredReveal(5)
+                        marginSection.staggeredReveal(6)
+                        pageSection.staggeredReveal(7)
+                        ReaderScreenSection(preferences: preferences)
+                            .id(AppearanceAnchor.screen)
+                            .staggeredReveal(8)
+                        resetButton.staggeredReveal(9)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 6)
+                    .padding(.bottom, 32)
+                    .frame(maxWidth: 560)
+                    .frame(maxWidth: .infinity)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 6)
-                .padding(.bottom, 32)
-                .frame(maxWidth: 560)
-                .frame(maxWidth: .infinity)
+                .scrollBounceBehavior(.basedOnSize)
+                #if DEBUG
+                .task {
+                    guard DemoLaunch.appearancePage == "screen" else { return }
+                    try? await Task.sleep(for: .milliseconds(400))
+                    proxy.scrollTo(AppearanceAnchor.screen, anchor: .top)
+                }
+                #endif
             }
-            .scrollBounceBehavior(.basedOnSize)
         }
         .confirmationDialog("Reset to defaults", isPresented: $confirmsReset, titleVisibility: .hidden) {
             Button("Reset to defaults", role: .destructive, action: reset)
@@ -432,6 +445,10 @@ private struct AppearanceForm: View {
     }
 }
 
+private enum AppearanceAnchor: Hashable {
+    case screen
+}
+
 private enum LineSpacing: Hashable, CaseIterable {
     case compact, standard, loose, custom
 
@@ -500,7 +517,8 @@ private extension FontWeightChoice {
 
 #if DEBUG
 extension DemoLaunch {
-    /// "more" opens the Aa sheet at its large detent, "fonts" on the font list.
+    /// "more" opens the Aa sheet at its large detent, "screen" there scrolled to the screen
+    /// section, "fonts" on the font list.
     static var appearancePage: String? { UserDefaults.standard.string(forKey: "DemoAppearancePage") }
 }
 #endif
