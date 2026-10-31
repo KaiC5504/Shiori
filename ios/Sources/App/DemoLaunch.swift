@@ -10,6 +10,13 @@ enum DemoLaunch {
     static var usesDemoData: Bool { defaults.bool(forKey: "DemoData") }
     static var showContents: Bool { defaults.bool(forKey: "DemoContents") }
     static var showsImportResults: Bool { defaults.bool(forKey: "DemoImportResults") }
+    /// Imports only the generated 3,000-chapter book, for the reader's UI tests.
+    static var usesLongBook: Bool { defaults.bool(forKey: "DemoLongBook") }
+
+    /// A 0-based chapter the reader jumps to once open, through the same path as Contents.
+    static var jumpTo: Int? {
+        defaults.object(forKey: "DemoJumpTo") == nil ? nil : defaults.integer(forKey: "DemoJumpTo")
+    }
 
     static var tab: AppTab? {
         switch defaults.string(forKey: "DemoTab") {
@@ -38,7 +45,10 @@ enum DemoLaunch {
         if let tab { model.selectedTab = tab }
         if usesDemoData {
             let sources = model.paths.root.deletingLastPathComponent().appending(path: "Sources")
-            if let urls = try? DemoBooks.write(into: sources) {
+            let urls = usesLongBook
+                ? (try? DemoBooks.writeLong(into: sources)).map { [$0] }
+                : try? DemoBooks.write(into: sources)
+            if let urls {
                 await model.importFiles(urls)
             }
         }

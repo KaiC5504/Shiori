@@ -40,8 +40,9 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
+      # project-tests.yml is project.yml plus the UI test target.
       - name: Generate project
-        run: cd ios && xcodegen generate
+        run: cd ios && xcodegen generate --spec project-tests.yml
 
       # Screenshots are reviewed at the 17 Pro Max's size (1320 x 2868). The image ships
       # some iPhones but not necessarily that one, so create it from its device type when
@@ -140,6 +141,25 @@ jobs:
           shoot 06-reader-dark 12 -DemoTab shelf -DemoReader 1
           xcrun simctl ui "$UDID" appearance light
           ls -la shots
+
+      # Scrolls the reader through a generated 3,000-chapter book: jumps, flings and slow
+      # drags across chapter boundaries, checking the text never moves by itself. Screenshots
+      # can't catch that, and it is what KaiC's phone test found.
+      - name: Reader UI tests
+        continue-on-error: true
+        run: |
+          status=0
+          xcodebuild test \
+            -project ios/Shiori.xcodeproj \
+            -scheme ShioriUITests \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=YES \
+            > ui-tests.log 2>&1 || status=$?
+          grep -E "Test Case|error:|failed|passed|\*\* TEST" ui-tests.log || tail -40 ui-tests.log
+          exit $status
 
       - name: Collect crash reports
         if: always()

@@ -135,6 +135,12 @@ struct ReaderView: View {
             try? await Task.sleep(for: .milliseconds(600))
             showsContents = true
         }
+        #if DEBUG
+        if let chapter = DemoLaunch.jumpTo {
+            try? await Task.sleep(for: .milliseconds(600))
+            jump(to: chapter)
+        }
+        #endif
     }
 
     private func jump(to chapter: Int) {

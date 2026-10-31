@@ -37,6 +37,30 @@ public enum DemoBooks {
         return [taohuayuan, yueyang, lanting]
     }
 
+    /// A web-novel-sized book for the reader's scroll tests: `chapters` chapters titled "第N章"
+    /// with 6–45 paragraphs each, every paragraph opening with a 〔N·P〕 marker so a test can
+    /// tell exactly which paragraph is on screen.
+    public static func writeLong(into directory: URL, chapters count: Int = 3_000) throws -> URL {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let url = directory.appending(path: "长篇测试(生成).epub")
+        try EPUBWriter.write(.init(
+            title: "长篇测试", author: "生成", identifier: "shiori-demo-long",
+            chapters: (1...count).map { n in
+                (title: "第\(n)章", volume: nil, paragraphs: markedParagraphs(chapter: n))
+            },
+            coverJPEG: nil), to: url)
+        return url
+    }
+
+    private static func markedParagraphs(chapter n: Int) -> [String] {
+        let count = 6 + (n * 37) % 40
+        return (1...count).map { p in
+            let sentences = 2 + (n + p) % 4
+            let body = (0..<sentences).map { filler[(n + p + $0) % filler.count] }.joined()
+            return "〔\(n)·\(p)〕" + body
+        }
+    }
+
     private static let filler = [
         "山间的风从溪水上吹过来，带着一点湿润的草木气息。",
         "他沿着小路慢慢地走，脚下的石子被晒得微微发暖。",

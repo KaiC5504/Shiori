@@ -1,0 +1,29 @@
+# The compile check's project: project.yml plus the UI test target. The signed TestFlight
+# build generates from project.yml alone, so the test bundle never meets App Store signing.
+include:
+  - project.yml
+
+targets:
+  ShioriUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: UITests
+    dependencies:
+      - target: Shiori
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.kaichuan.shiori.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: Shiori
+
+schemes:
+  ShioriUITests:
+    build:
+      targets:
+        Shiori: all
+        ShioriUITests: [test]
+    test:
+      config: Debug
+      targets:
+        - ShioriUITests
