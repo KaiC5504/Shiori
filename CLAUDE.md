@@ -59,9 +59,14 @@ minimum is iOS 26.
   15 s (it exists from M1 Task 2 on). Run it before every push that touches `ios/`. It
   only compiles, so CI stays the gate.
 - `ShioriLibrary` tests (GRDB, ZIP, decoding, the importer) run only on CI.
+- **The Mac loop** (while a Mac is rented, `ssh macrent`): `bash tools/mac/run.sh build shots`
+  builds, screenshots and copies the shots to `.superpowers/mac-shots/<time>/` in a few
+  minutes; add `libtests` and `uitests`, or run `all`. It pushes `dev` to the Mac only, never
+  to GitHub. Setup and limits are in `tools/mac/README.md`.
 - Debug builds read demo launch arguments: `-DemoData YES`, `-DemoTab shelf|imports|settings`,
   `-DemoReader <n>`, `-DemoContents YES`, `-DemoImportResults YES`. Every new screen gets
-  a `shoot` line in `ios-compile.yml`, in light and in dark where it matters.
+  a `shot` line in `tools/shots.sh` (shared by CI and the Mac), in light and in dark where
+  it matters.
 
 ## Building and shipping
 

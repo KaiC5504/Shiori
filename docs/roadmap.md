@@ -47,7 +47,14 @@ reopens at the same paragraph after the app is killed. A SoNovel TXT does the sa
 
 Plan: `docs/superpowers/plans/2026-10-31-m1-thin-slice.md`.
 
-## M2: The look (TestFlight 2)
+**TestFlight build 2:** the reader's chapter jump lands and stays (KaiC's report on build 1).
+
+From here milestones run in waves on a rented Mac: one plan covers several milestones, and
+each wave is one TestFlight build. Plan: `docs/superpowers/plans/2026-10-31-waves-m2-m3-m4a.md`.
+
+## M2: The look (TestFlight 3)
+
+**Done 2026-11-01: TestFlight build 3**, together with M3 (wave 1).
 
 - **Design system:** colour tokens (§4.2), the accent system with presets, custom accents
   with the contrast fix, and pick-from-photo.
@@ -66,6 +73,9 @@ animates its icons, and switching language or accent changes everything at once.
 
 ## M3: Import, complete (TestFlight 3)
 
+**Done 2026-11-01: TestFlight build 3**, together with M2 (wave 1). Build 3 also stops
+the reader running away when scrolling up right after a jump.
+
 - **Import tab hub (§8.1)** and its import log.
 - **Watched folder:**
   - choose a folder, or use Shiori's own folder
@@ -82,7 +92,11 @@ animates its icons, and switching language or accent changes everything at once.
 **Done when:** dropping a re-downloaded, longer copy of the test book into the watched
 folder updates the existing book ("Updated: +N chapters"), with progress intact.
 
-## M4a: Reader engine (TestFlight 4)
+## M4a: Reader engine
+
+**Deferred.** Wave 2 was re-scoped to what KaiC needs to read daily: the shelf and reader
+comfort (build 4, below). The Core Text paginator (wave 1's C1) is built and tested but
+unused until paged mode lands here.
 
 - **Text engine:** the content model, lazy per-chapter pagination with a cache, and
   positions stored as (chapter key, offset) (§7.3).
@@ -95,7 +109,11 @@ folder updates the existing book ("Updated: +N chapters"), with progress intact.
 **Done when:** KaiC reads the test book in paged mode with relay and curl. Changing font
 size keeps his place.
 
-## M4b: Reader, complete (TestFlight 5)
+## M4b: Reader, complete
+
+**Partly in TestFlight build 4 (wave 2):** the chrome (top bar, chapter slider, tool dock,
+info line), the five paper themes with Day/Night, full typography for scroll mode, and
+Apple's downloadable fonts. The rest of this milestone is still to come.
 
 - **Themes and screen:** paper themes and a custom background (§7.5), screen options,
   brightness, keep awake, rotation with a lock.
@@ -110,7 +128,10 @@ size keeps his place.
 **Done when:** everything in §7.1–§7.8, §7.11's illustrations and §7.12 works on the
 phone.
 
-## M5: Shelf (TestFlight 6, then 7)
+## M5: Shelf
+
+**M5a in TestFlight build 4 (wave 2):** the 3D spine carousel prototype, for look
+approval against the reference recordings.
 
 - **M5a, look approval:** a prototype of the 3D spine carousel (§6.2) ships alone, to be
   checked against the reference recordings. Polish waits for KaiC's OK.
