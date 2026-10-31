@@ -4,6 +4,23 @@ import ZIPFoundation
 /// Writes EPUBs in the shape SoNovel produces (spec §14): EPUB 3 with both NCX and nav,
 /// one `<h2>` plus `<p>` file per chapter. Used for test fixtures and the demo library.
 public enum EPUBWriter {
+    /// A picture in a chapter, before paragraph `beforeParagraph` (0 is right under the
+    /// heading; past the last paragraph is the chapter's end). `href` is relative to the
+    /// chapter file. Nil `data` leaves the `<img>` pointing at nothing, as in a damaged book.
+    public struct Illustration {
+        public var chapter: Int
+        public var beforeParagraph: Int
+        public var href: String
+        public var data: Data?
+
+        public init(chapter: Int, beforeParagraph: Int = 0, href: String, data: Data?) {
+            self.chapter = chapter
+            self.beforeParagraph = beforeParagraph
+            self.href = href
+            self.data = data
+        }
+    }
+
     public struct Book {
         public var title: String
         public var author: String
@@ -12,10 +29,12 @@ public enum EPUBWriter {
         public var coverJPEG: Data?
         public var fixedLayout: Bool = false
         public var encrypted: Bool = false
+        public var illustrations: [Illustration] = []
 
         public init(title: String, author: String, identifier: String,
                     chapters: [(title: String, volume: String?, paragraphs: [String])],
-                    coverJPEG: Data?, fixedLayout: Bool = false, encrypted: Bool = false) {
+                    coverJPEG: Data?, fixedLayout: Bool = false, encrypted: Bool = false,
+                    illustrations: [Illustration] = []) {
             self.title = title
             self.author = author
             self.identifier = identifier
@@ -23,6 +42,7 @@ public enum EPUBWriter {
             self.coverJPEG = coverJPEG
             self.fixedLayout = fixedLayout
             self.encrypted = encrypted
+            self.illustrations = illustrations
         }
     }
 
@@ -41,8 +61,20 @@ public enum EPUBWriter {
         if let cover = book.coverJPEG {
             try add("EPUB/cover.jpg", cover, to: archive, compressed: false)
         }
+        for picture in embedded(book) {
+            try add("EPUB/\(picture.href)", picture.data, to: archive, compressed: false)
+        }
         for (i, chapter) in book.chapters.enumerated() {
-            let paragraphs = chapter.paragraphs.map { "<p>\(escape($0))</p>" }.joined()
+            let pictures = book.illustrations.filter { $0.chapter == i }
+            let end = chapter.paragraphs.count
+            func figures(before index: Int) -> String {
+                pictures.filter { min(max($0.beforeParagraph, 0), end) == index }
+                    .map { #"<div class="illus"><img src="\#(escape($0.href))" alt=""/></div>"# }
+                    .joined()
+            }
+            let paragraphs = chapter.paragraphs.enumerated()
+                .map { index, text in figures(before: index) + "<p>\(escape(text))</p>" }
+                .joined() + figures(before: end)
             let html = """
             <?xml version='1.0' encoding='utf-8'?>
             <!DOCTYPE html>
@@ -57,6 +89,26 @@ public enum EPUBWriter {
         try archive.addEntry(with: path, type: .file, uncompressedSize: Int64(data.count),
                              compressionMethod: compressed ? .deflate : .none) { position, size in
             data.subdata(in: Int(position)..<Int(position) + size)
+        }
+    }
+
+    /// Each picture file once, in the order first used.
+    private static func embedded(_ book: Book) -> [(href: String, data: Data)] {
+        var seen: Set<String> = []
+        return book.illustrations.compactMap { picture in
+            guard let data = picture.data, seen.insert(picture.href).inserted else { return nil }
+            return (picture.href, data)
+        }
+    }
+
+    private static func mediaType(of href: String) -> String {
+        switch (href as NSString).pathExtension.lowercased() {
+        case "png": "image/png"
+        case "jpg", "jpeg": "image/jpeg"
+        case "gif": "image/gif"
+        case "webp": "image/webp"
+        case "svg": "image/svg+xml"
+        default: "application/octet-stream"
         }
     }
 
@@ -89,6 +141,9 @@ public enum EPUBWriter {
         """
         if book.coverJPEG != nil {
             manifest += #"<item href="cover.jpg" id="cover-img" media-type="image/jpeg" properties="cover-image"/>"#
+        }
+        for (n, picture) in embedded(book).enumerated() {
+            manifest += #"<item href="\#(escape(picture.href))" id="img_\#(n + 1)" media-type="\#(mediaType(of: picture.href))"/>"#
         }
         var spine = #"<itemref idref="nav" linear="no"/>"#
         for i in book.chapters.indices {
