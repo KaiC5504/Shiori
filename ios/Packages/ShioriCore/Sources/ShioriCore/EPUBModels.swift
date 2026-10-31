@@ -22,3 +22,20 @@ public struct EPUBPackage: Equatable, Sendable {
     public var navPath: String?
     public var ncxPath: String?
 }
+
+public struct TOCEntry: Equatable, Sendable {
+    public var title: String
+    /// Archive path, or "" for a heading that links nowhere (a nav `span`).
+    public var path: String
+    public var fragment: String?
+    public var children: [TOCEntry]
+}
+
+public struct ChapterEntry: Equatable, Sendable {
+    /// Position in the spine.
+    public var index: Int
+    public var path: String
+    /// "" when no contents entry points at this spine item.
+    public var title: String
+    public var volume: String?
+}
