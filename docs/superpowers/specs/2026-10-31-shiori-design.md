@@ -86,7 +86,8 @@ attached.
   work (no App Group, no iCloud, no push). Background audio is an Info.plist background
   mode, not an entitlement, so it is fine.
 - **Repo:** `KaiC5504/Shiori`, public (macOS minutes are free on public repos), MIT,
-  branches `main` and `dev`. The old fork is renamed `KaiC5504/Shiori-Flutter`.
+  and only `main` on GitHub. Work branches stay local and merge into `main` before it is
+  pushed. The old fork is renamed `KaiC5504/Shiori-Flutter`.
 - **Dependencies:** MIT, BSD or Apache licensed only, listed in `docs/THIRD_PARTY.md`
   and on an in-app Licenses page.
 

@@ -10,11 +10,11 @@ How each milestone runs:
    `superpowers:writing-plans` skill, as `docs/superpowers/plans/<date>-m<N>-<name>.md`.
    It plans from the spec and from what the earlier milestones actually built. M1's plan
    already exists.
-2. Work happens on `dev`. Every push gets the compile check and simulator screenshots on
-   an iPhone 17 Pro Max simulator.
-3. When the milestone's "done when" list passes in screenshots, `dev` merges to `main`,
-   a TestFlight build ships, and KaiC gets the build number, what changed and numbered
-   test steps.
+2. Work happens on the local `dev` branch. GitHub holds only `main`. Finished work merges
+   into `main` locally, then `main` is pushed. Each push runs the compile check and
+   simulator screenshots on an iPhone 17 Pro Max simulator.
+3. When the milestone's "done when" list passes in screenshots, a TestFlight build ships
+   from `main`, and KaiC gets the build number, what changed and numbered test steps.
 4. KaiC tests on his phone. Fixes go in before the next milestone starts.
 
 Rough sizes are relative, not dates.

@@ -50,7 +50,16 @@ GitHub Actions (`xcode-27` image, Xcode 27.1), and the `ios-testflight` skill pi
 - Test fixtures use public-domain text only, e.g. 《桃花源记》, 《岳阳楼记》, 《兰亭集序》,
   or generated text. KaiC's test book never enters the repo.
 - Comments follow the global rule: write the why, not the what.
-- Commit on `dev`. Push when a task's verification needs CI.
+- **Branches:** GitHub holds only `main`. Work on the local branch `dev`, which is never
+  pushed.
+- **"Ship" in this plan** means the only way anything reaches GitHub:
+  1. Commit on `dev`.
+  2. Run `git checkout main && git merge --ff-only dev && git push origin main && git checkout dev`.
+
+  Every push to `main` runs the compile check.
+- **Never ship a commit you expect to fail.** Ship only when local checks pass
+  (`swift test` for ShioriCore, `bash tools/check-app.sh` once Task 2 exists). If CI goes
+  red, fix it on `dev` and ship again.
 
 ## Review Focus
 
@@ -167,7 +176,7 @@ docs/THIRD_PARTY.md
   `C617.1`; `NSPrivacyTracking` false; no collected data types.
 - [ ] **Step 4: Write `ios-compile.yml`** from the skill's `templates/ios-compile.yml`, with
   these changes:
-  - `on: push` (branches `dev`, `main`; `paths`: `ios/**` and the workflow file) plus
+  - `on: push` (branch `main`; `paths`: `ios/**` and the workflow file) plus
     `workflow_dispatch`.
   - `runs-on: xcode-27`. The Toolchain step runs
     `sudo xcode-select -s /Applications/Xcode_27.1.app` and `xcodebuild -version`.
@@ -177,12 +186,13 @@ docs/THIRD_PARTY.md
     runtime. If there isn't one, fall back to the last available iPhone and print a
     warning.
   - `__APP__` = `Shiori` and `__BUNDLE_ID__` = `com.kaichuan.shiori` throughout.
-- [ ] **Step 5: Commit and push to `dev`.**
+- [ ] **Step 5: Commit and ship.**
   ```bash
-  git add ios .github && git commit -m "Add the Shiori project skeleton and compile check" && git push -u origin dev
+  git add ios .github && git commit -m "Add the Shiori project skeleton and compile check"
+  git checkout main && git merge --ff-only dev && git push origin main && git checkout dev
   ```
 - [ ] **Step 6: Verify.** Run `gh run watch <id> --exit-status` on the newest run
-  (`gh run list --branch dev --limit 1`). Expected: green. Then download it:
+  (`gh run list --branch main --limit 1`). Expected: green. Then download it:
   `gh run download <id> -n simulator-screenshots -D <scratch>`. Expected:
   `01-first-launch.png` shows "Shiori" on cream paper on a 1320 × 2868 screenshot (the
   17 Pro Max).
@@ -280,9 +290,10 @@ import Testing
 - [ ] **Step 4: Implement** `EPUBPath`, `EPUBError` and `ContainerParser` (`XMLParser`
   with a delegate, taking the first `rootfile@full-path`).
 - [ ] **Step 5: Run the tests.** Same command. Expected: "Test run with 6 tests passed".
-- [ ] **Step 6: Commit, push, and check CI is green.** CI now runs the ShioriCore tests.
+- [ ] **Step 6: Commit, ship, and check CI is green.** CI now runs the ShioriCore tests.
   ```bash
-  git add ios .github && git commit -m "Add ShioriCore with EPUB path and container parsing" && git push
+  git add ios .github && git commit -m "Add ShioriCore with EPUB path and container parsing"
+  git checkout main && git merge --ff-only dev && git push origin main && git checkout dev
   ```
 
 ### Task 4: OPF package parsing
@@ -563,9 +574,8 @@ let sonovelOPF = """
   - **《》 form:** for `《title》作者：author` the title is inside 《》, and the author
     follows `作者：` or `作者:`.
 - [ ] **Step 4: Run the tests.** Expected: pass. Run the whole ShioriCore suite: all green.
-- [ ] **Step 5: Commit and push.**
-  `git commit -m "Add chapter keys, book identity and file-name metadata" && git push`.
-  CI must be green.
+- [ ] **Step 5: Commit and ship.** Commit "Add chapter keys, book identity and
+  file-name metadata", then ship. CI must be green.
 
 ### Task 8: ShioriLibrary package, storage and database v1
 
@@ -645,9 +655,12 @@ let sonovelOPF = """
   - **Book list order:** books with progress come first, newest `updatedAt` first; the
     rest follow by `addedAt` descending.
   - **Connections:** `DatabaseQueue` for both the in-memory and file databases.
-- [ ] **Step 4: Push and watch CI.** Expected: the ShioriLibrary tests pass on the runner.
-  These tests cannot run on Windows (GRDB needs Apple's SQLite).
-- [ ] **Step 5: Commit** (with the push). Message: "Add ShioriLibrary storage and database v1".
+- [ ] **Step 4: Check locally.** Run `bash tools/check-app.sh`, which compiles the
+  package sources (not the tests). These tests can't run on Windows, because GRDB needs
+  Apple's SQLite, and `main` never gets a commit expected to fail. So there is no red run
+  for CI-only tests: write the tests and the code together.
+- [ ] **Step 5: Commit "Add ShioriLibrary storage and database v1", ship, and watch CI.**
+  Expected: the ShioriLibrary tests pass on the runner.
 
 ### Task 9: TXT decoding
 
@@ -686,7 +699,7 @@ let sonovelOPF = """
 @Test func emptyThrows() { #expect(throws: TextDecodingError()) { try TextDecoding.decode(Data()) } }
 ```
 
-- [ ] **Step 2: Push. Expected: FAIL on CI.**
+- [ ] **Step 2: **No red run.** These tests run only on CI and `main` never gets a commit expected to fail; go straight to the implementation.**
 - [ ] **Step 3: Implement.** Detection order:
   1. a preferred encoding, if one is given
   2. a BOM (UTF-8, UTF-16 LE or BE)
@@ -697,7 +710,7 @@ let sonovelOPF = """
 
   Strip a leading U+FEFF from the result. The encodings come from
   `CFStringConvertEncodingToNSStringEncoding` with `.GB_18030_2000` and `.big5`.
-- [ ] **Step 4: Push. Expected: pass.** Commit "Detect TXT encodings".
+- [ ] **Step 4: Run `bash tools/check-app.sh`, commit "Detect TXT encodings", ship, and watch CI.** Expected: pass.
 
 ### Task 10: EPUB archive, chapter content and the XHTML parser
 
@@ -773,7 +786,7 @@ let sonovelOPF = """
 }
 ```
 
-- [ ] **Step 2: Push. Expected: FAIL.**
+- [ ] **Step 2: **No red run.** These tests run only on CI and `main` never gets a commit expected to fail; go straight to the implementation.**
 - [ ] **Step 3: Implement.**
   - **Parser:** SwiftSoup's lenient HTML parsing.
   - **Blocks:** `h1`–`h6` become headings. `p`, `div` leaf text and `li` become
@@ -781,7 +794,7 @@ let sonovelOPF = """
     images, resolved with `EPUBPath.resolve`.
   - **Text:** collapse whitespace runs (including U+00A0 from `&nbsp;`) to one space,
     trim ASCII and U+3000, drop empty paragraphs.
-- [ ] **Step 4: Push. Expected: pass.** Commit "Read EPUB archives and chapter content".
+- [ ] **Step 4: Run `bash tools/check-app.sh`, commit "Read EPUB archives and chapter content", ship, and watch CI.** Expected: pass.
 
 ### Task 11: Importer
 
@@ -902,10 +915,10 @@ let sonovelOPF = """
     `测试`, with chapters `第N章` of three paragraphs each, via `EPUBWriter`, to a file
     named `测试书.epub`.
   - `writeTXT(name:text:encoding:)`.
-- [ ] **Step 2: Push. Expected: FAIL.**
+- [ ] **Step 2: **No red run.** These tests run only on CI and `main` never gets a commit expected to fail; go straight to the implementation.**
 - [ ] **Step 3: Implement** `BookImporter`, `BookContentSource` and `DemoBooks` as the
   pipeline above describes.
-- [ ] **Step 4: Push. Expected: pass.** Note the 5,000-chapter timing from the log in the
+- [ ] **Step 4: Run `bash tools/check-app.sh`, commit, ship, and watch CI. Expected: pass.** Note the 5,000-chapter timing from the log in the
   commit message body. Commit "Import EPUB and TXT books".
 
 ### Task 12: App model, tokens and the full-width bar
@@ -960,7 +973,7 @@ let sonovelOPF = """
 - [ ] **Step 3: Add screenshot lines to `ios-compile.yml`.**
   `shoot 02-shelf-empty 8 -DemoTab shelf` (this one without `-DemoData`; split the
   `shoot` helper so demo data is opt-in per line).
-- [ ] **Step 4: Push and watch CI. Look at the screenshots.** Expected: the bar spans the
+- [ ] **Step 4: Ship and watch CI. Look at the screenshots.** Expected: the bar spans the
   width with a 16 pt inset on both sides, three lanes, Shelf selected, on paper.
 - [ ] **Step 5: Commit.** "Add the app model and the full-width floating bar"
 
@@ -1002,7 +1015,7 @@ let sonovelOPF = """
   `recentImports` with one of each outcome kind, so the screenshot shows every row style.
 - [ ] **Step 3: Add the screenshot line.**
   `shoot 03-import 10 -DemoTab imports -DemoImportResults YES`.
-- [ ] **Step 4: Run `tools/check-app.sh`, then push and check the screenshot.** Expected:
+- [ ] **Step 4: Run `tools/check-app.sh`, then commit, ship and check the screenshot.** Expected:
   every row reads correctly in English (the simulator's locale).
 - [ ] **Step 5: Commit.** "Add the Import tab"
 
@@ -1031,7 +1044,7 @@ let sonovelOPF = """
 - [ ] **Step 3: Add the screenshot lines.** `shoot 04-shelf 10 -DemoTab shelf` and
   `shoot 05-settings 8 -DemoTab settings`. Then add the dark set: run
   `xcrun simctl ui "$UDID" appearance dark` and repeat `04-shelf` as `04-shelf-dark`.
-- [ ] **Step 4: Run `tools/check-app.sh`, then push and look at the shots.** Expected:
+- [ ] **Step 4: Run `tools/check-app.sh`, then commit, ship and look at the shots.** Expected:
   three demo books with titles and authors; dark mode uses the dark tokens.
 - [ ] **Step 5: Commit.** "Add the shelf list and the settings stub"
 
@@ -1078,7 +1091,7 @@ let sonovelOPF = """
 - [ ] **Step 1: Implement the model and views.**
 - [ ] **Step 2: Add the screenshot lines.** `shoot 06-reader 12 -DemoTab shelf -DemoReader 1`
   and `shoot 07-contents 12 -DemoTab shelf -DemoReader 1 -DemoContents YES`.
-- [ ] **Step 3: Run `tools/check-app.sh`, then push and look.** Expected: reader text on
+- [ ] **Step 3: Run `tools/check-app.sh`, then commit, ship and look.** Expected: reader text on
   paper with the chapter heading; the contents sheet has volume sections for 《兰亭集序》.
 - [ ] **Step 4: Commit.** "Add the scroll reader with contents and saved progress"
 
@@ -1107,8 +1120,8 @@ let sonovelOPF = """
   - **§5:** the `testflight` environment and secrets.
 
   Verify with `gh secret list --env testflight -R KaiC5504/Shiori`. Put the Apple ID
-  into `ASC_APP_ID` and push.
-- [ ] **Step 3: Dry run.** Merge `dev` to `main` (`--ff-only`), then run
+  into `ASC_APP_ID`, commit and ship.
+- [ ] **Step 3: Dry run.** With everything shipped to `main`, run
   `python scripts/testflight.py start --create-signing --dry-run` and watch it. Expected:
   green signing and checks with no upload. Fix failures with the skill's
   `reference/troubleshooting.md`.

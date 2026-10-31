@@ -19,7 +19,7 @@ minimum is iOS 26.
 1. If the milestone has no plan yet, write one with `superpowers:writing-plans`, from
    the spec and from what is actually in the repo. Show it to KaiC before building.
 2. Execute it task by task (`superpowers:subagent-driven-development` or
-   `superpowers:executing-plans`), on `dev`.
+   `superpowers:executing-plans`), on the local `dev` branch (see Branches below).
 3. When the roadmap's "done when" passes in the simulator screenshots, ship a TestFlight
    build (below). Report the build number, what changed, how it works, and numbered test
    steps for the phone. KaiC doesn't read code: a milestone is done when he can confirm
@@ -73,11 +73,26 @@ none). Repo `KaiC5504/Shiori` (public). App Store Connect name: set in M1 Task 1
 ID: set in M1 Task 16. Runner: `xcode-27` with Xcode 27.1 (fallback `macos-26`, Xcode
 26.6). Screenshots come from an iPhone 17 Pro Max simulator.
 
-1. Work on `dev`. Push. Wait for the compile check (`gh run list --branch dev --limit 1`,
-   then `gh run watch <id> --exit-status`), and look at the `simulator-screenshots`
-   artifact for every screen you touched.
-2. `git checkout main && git merge --ff-only dev && git push && git checkout dev`
-3. `python scripts/testflight.py start`, then `python scripts/testflight.py watch <id>` in
+### Branches (KaiC's rule)
+
+- **GitHub holds only `main`.** Work happens on local branches: `dev` by default, plus
+  local feature branches if useful. These are never pushed. Don't create other branches
+  on GitHub, and don't push `dev`.
+- **Everything merges into `main` locally first.** Pushing `main` is the last step, and
+  it is what runs Actions.
+- **Only ship what is expected to pass.** Ship when local checks pass (`swift test` for
+  ShioriCore, `bash tools/check-app.sh` for the app). If CI goes red, fix it on `dev` and
+  ship again.
+
+### The loop
+
+1. Commit on `dev`. Then ship:
+   `git checkout main && git merge --ff-only dev && git push origin main && git checkout dev`.
+2. Wait for the compile check (`gh run list --branch main --limit 1`, then
+   `gh run watch <id> --exit-status`), and look at the `simulator-screenshots` artifact
+   for every screen you touched.
+3. At the end of a milestone, with `main` green:
+   `python scripts/testflight.py start`, then `python scripts/testflight.py watch <id>` in
    the background. Green means Apple has processed the build. After any change to
    `testflight.yml`, run `start --dry-run` first.
 4. Report the TestFlight build number, what changed and test steps for the phone.
