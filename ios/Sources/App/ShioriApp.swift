@@ -23,7 +23,7 @@ struct ShioriApp: App {
                         #if DEBUG
                         await DemoLaunch.apply(to: model)
                         #endif
-                        await model.watchedFolder.scanOnLaunchIfNeeded(settings: model.importSettings)
+                        await model.scanOnLaunch()
                     }
             } else {
                 LaunchFailureView(detail: failure ?? "")

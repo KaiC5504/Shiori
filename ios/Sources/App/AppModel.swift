@@ -85,12 +85,19 @@ final class AppModel {
     }
 
     /// Open in / Share → Shiori.
+    /// The launch scan stages files too, so it waits for the launch cleanup as imports do.
+    func scanOnLaunch() async {
+        await cleanup?.value
+        await watchedFolder.scanOnLaunchIfNeeded(settings: importSettings)
+    }
+
     func handleIncoming(_ url: URL) async {
+        // On a cold launch from Open in, the launch cleanup would empty the inbox under the copy.
+        await cleanup?.value
         guard let copy = await IncomingFiles.copy(url) else {
             logFailures([.failed(fileName: url.lastPathComponent, reason: .unreadable("open in"))], origin: .openIn)
             return
         }
-        await cleanup?.value
         isImporting = true
         let outcomes = await importer.importFiles(at: copy, origin: .openIn, settings: importSettings)
         isImporting = false

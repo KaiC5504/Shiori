@@ -242,6 +242,22 @@
         }
       }
     },
+    "Couldn't read that photo.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't read that photo."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取这张照片。"
+          }
+        }
+      }
+    },
     "Couldn't read the file.": {
       "localizations": {
         "zh-Hans": {
@@ -384,6 +400,24 @@
     },
     "Found %lld new books": {
       "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Found %lld new book"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Found %lld new books"
+                }
+              }
+            }
+          }
+        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
@@ -692,6 +726,22 @@
         }
       }
     },
+    "Only EPUB, TXT, PDF and ZIP files.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only EPUB, TXT, PDF and ZIP files."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "只支持 EPUB、TXT、PDF 和 ZIP 文件。"
+          }
+        }
+      }
+    },
     "Open": {
       "localizations": {
         "zh-Hans": {
@@ -738,6 +788,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "前言"
+          }
+        }
+      }
+    },
+    "Presets": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Presets"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "预设"
           }
         }
       }
@@ -928,6 +994,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Shiori 无法打开书库。"
+          }
+        }
+      }
+    },
+    "Show all %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show all %lld"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示全部 %lld 条"
+          }
+        }
+      }
+    },
+    "Show less": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show less"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "收起"
           }
         }
       }
