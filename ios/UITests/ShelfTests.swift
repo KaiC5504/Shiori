@@ -7,7 +7,7 @@ final class ShelfTests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-DemoData", "YES", "-DemoTab", "shelf"]
         app.launch()
-        let shelf = app.otherElements["3D shelf"].firstMatch
+        let shelf = app.descendants(matching: .any)["shelf.row"].firstMatch
         XCTAssertTrue(shelf.waitForExistence(timeout: 30), "no 3D shelf")
         Thread.sleep(forTimeInterval: 3)
         let before = shelf.value as? String ?? ""

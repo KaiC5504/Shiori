@@ -47,7 +47,7 @@ uitests() {
   local only=()
   [ -n "${1:-}" ] && only=(-only-testing:"ShioriUITests/$1")
   xcodebuild test -project ios/Shiori.xcodeproj -scheme ShioriUITests -destination "id=$UDID" \
-    -derivedDataPath ~/dd "${SIGN[@]}" ${only[@]+"${only[@]}"} > ~/logs/uitests.log 2>&1 || status=1
+    -derivedDataPath ~/dd "${SIGN[@]}" ${only[@]+"${only[@]}"}     -collect-test-diagnostics never > ~/logs/uitests.log 2>&1 || status=1
   # A test file added since the last `build` isn't in the project yet, and the run "succeeds".
   if grep -q "Executed 0 tests" ~/logs/uitests.log && ! grep -q "Executed [1-9]" ~/logs/uitests.log; then
     echo "NO TESTS RAN (run build first after adding a test file)"

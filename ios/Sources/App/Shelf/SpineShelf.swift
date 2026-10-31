@@ -64,6 +64,7 @@ struct SpineShelf: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text("3D shelf"))
             .accessibilityValue(Text(verbatim: item.book.title))
+            .accessibilityIdentifier("shelf.row")
             .accessibilityAction { open(item) }
     }
 
@@ -99,6 +100,7 @@ struct SpineShelf: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("3D shelf"))
         .accessibilityValue(Text(verbatim: current?.book.title ?? ""))
+        .accessibilityIdentifier("shelf.row")
         .accessibilityAdjustableAction { direction in
             guard let crest else { return }
             switch direction {
