@@ -1,86 +1,83 @@
 import ShioriLibrary
 import SwiftUI
 
+/// One file's result in the import log: what it was, then what happened to it in plain words.
 struct ImportOutcomeRow: View {
     let outcome: ImportOutcome
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @ScaledMetric private var iconWidth: CGFloat = 24
+    @ScaledMetric private var iconSize: CGFloat = 22
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            Image(systemName: symbol)
-                .foregroundStyle(symbolStyle)
-                .frame(width: iconWidth)
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
-                headline
-                if case .failed(_, let reason) = outcome {
-                    reasonText(reason)
-                        .font(.subheadline)
-                        .foregroundStyle(Tokens.inkSecondary)
+            IconView(icon, size: iconSize)
+                .opacity(isQuiet ? 0.55 : 1)
+            VStack(alignment: .leading, spacing: 3) {
+                if dynamicTypeSize.isAccessibilitySize {
+                    if isFailure { failedStamp }
+                    title
+                } else {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        title.frame(maxWidth: .infinity, alignment: .leading)
+                        if isFailure { failedStamp }
+                    }
                 }
+                detail
+                    .font(.footnote)
+                    .foregroundStyle(Tokens.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .padding(.vertical, 11)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Tokens.surface, in: RoundedRectangle(cornerRadius: 8))
-        .overlay {
-            RoundedRectangle(cornerRadius: 8).strokeBorder(Tokens.line, lineWidth: 1)
-        }
         .accessibilityElement(children: .combine)
     }
 
     @ViewBuilder
-    private var headline: some View {
-        if dynamicTypeSize.isAccessibilitySize {
-            VStack(alignment: .leading, spacing: 2) {
-                statusLabel
-                title
-            }
-        } else {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                title.frame(maxWidth: .infinity, alignment: .leading)
-                statusLabel
-            }
-        }
-    }
-
-    @ViewBuilder
     private var title: some View {
-        if case .failed(let fileName, _) = outcome, fileName.isEmpty {
-            titleStyle(Text("Import files"))
-        } else {
-            titleStyle(Text(verbatim: displayName))
+        Group {
+            if case .failed(let fileName, _) = outcome, fileName.isEmpty {
+                Text("Import files")
+            } else {
+                Text(verbatim: displayName)
+            }
         }
+        .font(.body)
+        .foregroundStyle(isQuiet ? Tokens.inkSecondary : Tokens.ink)
+        .lineLimit(2)
+        .truncationMode(.middle)
     }
 
-    private func titleStyle(_ text: Text) -> some View {
-        text
-            .font(.body)
-            .foregroundStyle(Tokens.ink)
-            .lineLimit(2)
-            .truncationMode(.middle)
-    }
-
-    private var statusLabel: some View {
-        status
-            .font(.caption2.monospaced().weight(.medium))
+    /// A rubber-stamp mark, so a failure reads at a glance in a long log.
+    private var failedStamp: some View {
+        Text("Failed")
+            .font(.caption2.monospaced().weight(.semibold))
             .tracking(0.8)
             .textCase(.uppercase)
-            .foregroundStyle(isFailure ? Tokens.ink : Tokens.inkSecondary)
+            .foregroundStyle(Tokens.ink)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 2)
+            .overlay { RoundedRectangle(cornerRadius: 4).strokeBorder(Tokens.ink, lineWidth: 1) }
             .fixedSize()
     }
 
-    private var status: Text {
+    private var detail: Text {
         switch outcome {
-        case .added: Text("Added")
-        case .alreadyInLibrary: Text("Already in library")
-        case .updated: Text("Updated")
-        case .resplit: Text("Re-detect chapters")
-        case .skipped: Text("Import")
-        case .failed: Text("Failed")
+        case .added:
+            Text("Added")
+        case .alreadyInLibrary:
+            Text("Already in library")
+        case .updated(_, _, .addedChapters(let count)):
+            Text("Updated: +\(count) chapters")
+        case .updated(_, _, .changed):
+            Text("Updated: changed")
+        case .resplit(_, _, let chapters):
+            Text("Re-detected: \(chapters) chapters")
+        case .skipped(_, let reason):
+            skipText(reason)
+        case .failed(_, let reason):
+            failureText(reason)
         }
     }
 
@@ -92,41 +89,54 @@ struct ImportOutcomeRow: View {
         }
     }
 
-    private var symbol: String {
+    private var icon: ShioriIcon {
         switch outcome {
-        case .added: "checkmark.circle.fill"
-        case .alreadyInLibrary: "books.vertical.fill"
-        case .updated, .resplit: "arrow.clockwise"
-        case .skipped: "info.circle"
-        case .failed: "exclamationmark.triangle.fill"
+        case .added: .check
+        case .alreadyInLibrary: .book
+        case .updated, .resplit: .refresh
+        case .skipped: .info
+        case .failed: .warning
         }
     }
 
-    private var symbolStyle: Color {
-        if case .alreadyInLibrary = outcome { Tokens.inkSecondary } else { Tokens.ink }
+    /// Nothing changed in the library, so the row steps back.
+    private var isQuiet: Bool {
+        switch outcome {
+        case .alreadyInLibrary, .skipped: true
+        default: false
+        }
     }
 
     private var isFailure: Bool {
         if case .failed = outcome { true } else { false }
     }
 
-    private func reasonText(_ reason: ImportFailure) -> Text {
+    private func skipText(_ reason: SkipReason) -> Text {
+        switch reason {
+        case .removedEarlier: Text("Removed earlier, skipped")
+        case .nestedArchive: Text("Nested ZIP skipped")
+        case .waitingForDownload: Text("Waiting for iCloud download")
+        case .tooManyFiles(let limit): Text("Too many files: only the first \(limit) were scanned")
+        }
+    }
+
+    private func failureText(_ reason: ImportFailure) -> Text {
         switch reason {
         case .drmProtected:
-            return Text("This book is DRM-protected.")
+            Text("This book is DRM-protected.")
         case .fixedLayout:
-            return Text("Fixed-layout books aren't supported yet.")
+            Text("Fixed-layout books aren't supported yet.")
         case .noChapters:
-            return Text("No chapters were found.")
+            Text("No chapters were found.")
         case .empty:
-            return Text("The file is empty.")
+            Text("The file is empty.")
         case .unsupportedFormat:
-            return Text("Only EPUB and TXT for now.")
+            Text("Only EPUB, TXT, PDF and ZIP files.")
         case .tooLarge(let limitBytes):
-            let limit = ByteCountFormatter.string(fromByteCount: limitBytes, countStyle: .binary)
-            return Text(String(localized: "Too large (over \(limit))."))
+            // Interpolated into the key (not String(localized:)) so the in-app language applies.
+            Text("Too large (over \(limitBytes, format: .byteCount(style: .binary))).")
         case .unreadable:
-            return Text("Couldn't read the file.")
+            Text("Couldn't read the file.")
         }
     }
 }
