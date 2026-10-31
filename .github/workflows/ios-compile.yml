@@ -146,7 +146,6 @@ jobs:
       # drags across chapter boundaries, checking the text never moves by itself. Screenshots
       # can't catch that, and it is what KaiC's phone test found.
       - name: Reader UI tests
-        continue-on-error: true
         run: |
           status=0
           xcodebuild test \
