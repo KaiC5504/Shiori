@@ -21,12 +21,17 @@ final class ReaderTapTests: XCTestCase {
     func testTapForwardKeepsPlaceAfterRelaunch() {
         let before = top()
         let lastBefore = bottom()
+        let seenBefore = app.staticTexts.allElementsBoundByIndex
+            .filter { Self.place(of: $0.label) != nil && $0.frame.height > 0 }
+            .map { "\(String($0.label.prefix(9)))@\(Int($0.frame.minY))" }
+            .joined(separator: ", ")
         tap(atX: 0.9)
         Thread.sleep(forTimeInterval: 1)
         let after = top()
         XCTAssertGreaterThan(after.place, before.place, "the tap went from \(before.label) to \(after.label)")
         // A line of overlap means the paragraph that was last on screen is still there.
-        XCTAssertLessThanOrEqual(after.place, lastBefore.place, "skipped from \(lastBefore.label) to \(after.label)")
+        XCTAssertLessThanOrEqual(after.place, lastBefore.place,
+                                 "skipped from \(lastBefore.label.prefix(12))@\(Int(lastBefore.minY)) to \(after.label.prefix(12)); before the tap: \(seenBefore)")
         settle()
         assertStill(after)
 
