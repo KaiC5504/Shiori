@@ -425,26 +425,29 @@ extension ReaderModel: PagedSource {
         pagedPlace = place
         currentChapter = place.chapter
         trimPaged()
-        saveTask?.cancel()
-        if let content = pagedContents[place.chapter] {
-            pending = progress(at: place, in: content)
-            if jumped {
-                saveNow()
-            } else {
-                saveTask = Task { [weak self] in
-                    try? await Task.sleep(for: .milliseconds(500))
-                    guard !Task.isCancelled else { return }
-                    self?.saveNow()
-                }
-            }
-        } else if jumped {
-            // A jump can arrive before its chapter has loaded; a turn's page was laid out from it.
-            saveTask = Task { [weak self] in
+        guard let content = pagedContents[place.chapter] else {
+            // A turn's page was laid out from its chapter's text, so a turn without it is into a
+            // chapter that couldn't be read, and the save still due for the page before stands.
+            // A jump can simply arrive before its chapter has loaded.
+            guard jumped else { return }
+            Task { [weak self] in
                 guard let self, let content = await self.pagedContent(place.chapter), self.pagedPlace == place
                 else { return }
                 self.pending = self.progress(at: place, in: content)
                 self.saveNow()
             }
+            return
+        }
+        pending = progress(at: place, in: content)
+        if jumped {
+            saveNow()
+            return
+        }
+        saveTask?.cancel()
+        saveTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled else { return }
+            self?.saveNow()
         }
     }
 
