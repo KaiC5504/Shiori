@@ -234,21 +234,23 @@ private struct ChromeSlide: ViewModifier {
 }
 
 /// The slim info line at the bottom of the page (spec §7.7, option B): the chapter on the left,
-/// the place in the book, the time and the battery on the right. It takes the reader's ink as
-/// `.secondary`, and the reader sets its horizontal margins.
+/// the place, the time and the battery on the right. It takes the reader's ink as `.secondary`,
+/// and the reader sets its horizontal margins.
 struct ReaderInfoFooter: View {
     let chapterTitle: String
-    let chapterIndex: Int
-    let chapterCount: Int
+    /// 1-based: the page in the chapter in the paged layout, the chapter in the book in the scroll.
+    let place: Int
+    /// 0 leaves the count out, as while a chapter is still being laid out.
+    let count: Int
     let showsBattery: Bool
 
     /// 0...1; nil when the phone can't say (always, in the simulator).
     @State private var battery: Float?
 
-    init(chapterTitle: String, chapterIndex: Int, chapterCount: Int, showsBattery: Bool) {
+    init(chapterTitle: String, place: Int, count: Int, showsBattery: Bool) {
         self.chapterTitle = chapterTitle
-        self.chapterIndex = chapterIndex
-        self.chapterCount = chapterCount
+        self.place = place
+        self.count = count
         self.showsBattery = showsBattery
     }
 
@@ -260,8 +262,8 @@ struct ReaderInfoFooter: View {
             Spacer(minLength: 0)
             TimelineView(.everyMinute) { context in
                 HStack(spacing: 0) {
-                    if chapterCount > 0 {
-                        Text(verbatim: "\(chapterIndex + 1) / \(chapterCount) · ")
+                    if count > 0 {
+                        Text(verbatim: "\(place) / \(count) · ")
                     }
                     Text(context.date, format: .dateTime.hour(.defaultDigits(amPM: .omitted)).minute())
                     if showsBattery, let battery {

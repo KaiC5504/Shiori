@@ -2,8 +2,9 @@ import ShioriCore
 import ShioriLibrary
 import SwiftUI
 
-/// One continuous vertical scroll through the book in the reader's own type and paper, under
-/// the floating chrome a centre tap shows. Taps at the sides move a screen at a time.
+/// The book in the reader's own type and paper, under the floating chrome a centre tap shows:
+/// one continuous vertical scroll, or pages (`PagedReaderView`), as `readerPreferences.layout`
+/// says. Taps at the sides move a screen or turn a page.
 struct ReaderView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.scenePhase) private var scenePhase
@@ -15,6 +16,11 @@ struct ReaderView: View {
     @State private var reader: ReaderModel?
     @State private var openFailed = false
     @State private var position = ScrollPosition(idType: ParagraphAnchor.self)
+    /// The pages' place. The paged view writes it on every turn; writing it here is a jump.
+    @State private var pagedPosition = ReaderPosition(chapter: 0, offset: 0)
+    /// The layout on screen, which follows the preference once the place has been handed over.
+    @State private var shownLayout = ReaderLayout.scroll
+    @State private var pageNumber: PagedPageNumber?
     @State private var showsChrome = false
     @State private var sheet: ReaderSheet?
     @State private var viewport: CGRect = .zero
@@ -36,8 +42,14 @@ struct ReaderView: View {
         let theme = preferences.theme
         ZStack {
             if let reader {
-                pages(reader)
-                edgeFades(preferences)
+                switch shownLayout {
+                case .scroll:
+                    pages(reader)
+                    edgeFades(preferences)
+                case .paged:
+                    paged(reader)
+                }
+                veil(theme.paper)
                 if preferences.showsInfoFooter { footer(reader) }
                 BrightnessEdge(preferences: preferences) { tap(at: $0) }
             } else if openFailed {
@@ -103,6 +115,7 @@ struct ReaderView: View {
         }
         .onChange(of: preferences.brightness) { holdScreen() }
         .onChange(of: preferences.keepsScreenAwake) { holdScreen() }
+        .onChange(of: preferences.layout) { _, layout in switchLayout(to: layout) }
         .shioriHaptic(.selection, trigger: turns)
     }
 
@@ -146,6 +159,50 @@ struct ReaderView: View {
         .accessibilityAction(.escape) { close() }
     }
 
+    /// The pages turn on their own taps and swipes and write `pagedPosition`; saving and the
+    /// session follow each turn.
+    private func paged(_ reader: ReaderModel) -> some View {
+        PagedReaderView(source: reader, position: $pagedPosition,
+                        onMenu: { showMenu(reader) }, onTurn: { pageTurned(reader) })
+            .safeAreaPadding(.bottom, bottomCover - safeArea.bottom)
+            .onPreferenceChange(PagedPageNumberKey.self) { number in pageNumber = number }
+            .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { viewport = $0 }
+            .overlay {
+                // With the chrome or the Aa sheet up, a tap on the page closes them instead of
+                // turning, and a swipe closes the chrome as scrolling does.
+                if showsChrome || sheet != nil {
+                    Color.clear
+                        .contentShape(.rect)
+                        .onTapGesture(coordinateSpace: .global) { location in tap(at: location) }
+                        .gesture(DragGesture(minimumDistance: 12).onEnded { _ in
+                            if showsChrome { setChrome(false) }
+                        })
+                        .ignoresSafeArea()
+                        .accessibilityHidden(true)
+                }
+            }
+            .accessibilityAction(.magicTap) { setChrome(!showsChrome) }
+            .accessibilityAction(named: Text("Contents")) { sheet = .contents }
+            .accessibilityAction(named: Text("Appearance")) { openAppearance() }
+            .accessibilityAction(.escape) { close() }
+    }
+
+    /// Paper over a layout switch, clearing as the new layout shows, so neither has to animate.
+    private func veil(_ paper: Color) -> some View {
+        paper
+            .ignoresSafeArea()
+            .keyframeAnimator(initialValue: 0.0, trigger: shownLayout) { content, opacity in
+                content.opacity(opacity)
+            } keyframes: { _ in
+                KeyframeTrack {
+                    MoveKeyframe(1.0)
+                    LinearKeyframe(0.0, duration: reduced ? 0.15 : 0.3)
+                }
+            }
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+    }
+
     private func chrome(_ reader: ReaderModel) -> some View {
         ReaderChrome(
             state: ReaderChromeState(bookTitle: book.title, chapterTitle: chapterTitle(reader),
@@ -162,8 +219,11 @@ struct ReaderView: View {
 
     private func footer(_ reader: ReaderModel) -> some View {
         let margins = TypographyAttributes.margins(model.readerPreferences.typography)
-        return ReaderInfoFooter(chapterTitle: chapterTitle(reader), chapterIndex: reader.currentChapter,
-                                chapterCount: reader.chapters.count,
+        // The page in the chapter while paged (spec §7.7), the chapter in the book while scrolling.
+        let place = shownLayout == .paged
+            ? (pageNumber?.page ?? 0, pageNumber?.pages ?? 0)
+            : (reader.currentChapter + 1, reader.chapters.count)
+        return ReaderInfoFooter(chapterTitle: chapterTitle(reader), place: place.0, count: place.1,
                                 showsBattery: model.readerPreferences.showsBattery)
             .foregroundStyle(model.readerPreferences.theme.inkSecondary)
             .padding(.leading, margins.left)
@@ -247,15 +307,23 @@ struct ReaderView: View {
         // first layout would fall back to the system font.
         await FontDownloads.shared.activate(model.readerPreferences.typography.fontFamily)
         do {
-            let reader = try await ReaderModel.open(book: book, database: model.database, paths: model.paths)
+            let reader = try await ReaderModel.open(book: book, database: model.database, paths: model.paths,
+                                                    preferences: model.readerPreferences)
             let jump = await reader.start()
             // Set before the scroll view exists, so its first layout is already at the paragraph.
             position.scrollTo(id: reader.initialAnchor, anchor: .top)
+            let layout = model.readerPreferences.layout
+            if layout == .paged {
+                // The saved character rather than its paragraph, so the same page comes back.
+                pagedPosition = reader.initialPlace
+                reader.enterPaged(at: reader.initialPlace)
+            }
+            shownLayout = layout
             self.reader = reader
             tracker = ReadingSessionTracker(database: model.database, bookId: book.id)
             // The first screen counts as reading before any scroll or tap.
             tracker?.ping(chapterIndex: reader.currentChapter)
-            if let jump { await land(jump, in: reader) }
+            if layout == .scroll, let jump { await land(jump, in: reader) }
         } catch {
             openFailed = true
             return
@@ -286,6 +354,14 @@ struct ReaderView: View {
 
     private func jump(to chapter: Int) {
         guard let reader else { return }
+        if shownLayout == .paged {
+            guard reader.chapters.indices.contains(chapter) else { return }
+            let place = ReaderPosition(chapter: chapter, offset: 0)
+            pagedPosition = place
+            reader.pagedMoved(to: place, jumped: true)
+            tracker?.ping(chapterIndex: chapter)
+            return
+        }
         Task {
             guard let jump = await reader.show(chapter: chapter) else { return }
             position.scrollTo(id: jump.anchor, anchor: .top)
@@ -340,12 +416,71 @@ struct ReaderView: View {
             return
         }
         let preferences = model.readerPreferences
-        switch TapZones.action(x: point.x - viewport.minX, y: point.y - viewport.minY,
-                               width: viewport.width, height: viewport.height,
-                               layout: preferences.tapLayout, bothSidesForward: preferences.bothSidesForward) {
+        let action = TapZones.action(x: point.x - viewport.minX, y: point.y - viewport.minY,
+                                     width: viewport.width, height: viewport.height,
+                                     layout: preferences.tapLayout, bothSidesForward: preferences.bothSidesForward)
+        if shownLayout == .paged, action != .menu {
+            step(forward: action == .forward)
+            return
+        }
+        switch action {
         case .menu: setChrome(true)
         case .forward: turn(by: 1)
         case .back: turn(by: -1)
+        }
+    }
+
+    private func showMenu(_ reader: ReaderModel) {
+        tracker?.ping(chapterIndex: reader.currentChapter)
+        setChrome(true)
+    }
+
+    /// The paged view has already written the new page into `pagedPosition`.
+    private func pageTurned(_ reader: ReaderModel) {
+        reader.pagedMoved(to: pagedPosition)
+        tracker?.ping(chapterIndex: pagedPosition.chapter)
+    }
+
+    /// A page turn for a tap the page never sees, on the brightness strip over its left edge.
+    /// It lands without the turn's motion, as a jump does.
+    private func step(forward: Bool) {
+        guard let reader, let place = reader.pagedNeighbour(of: pagedPosition, forward: forward) else { return }
+        pagedPosition = place
+        turns += 1
+        reader.pagedMoved(to: place)
+    }
+
+    /// Hands the place over when the Aa sheet changes the layout: the scroll's top paragraph
+    /// becomes the page holding its first character, and a page's first character the
+    /// paragraph at the top of the scroll.
+    private func switchLayout(to layout: ReaderLayout) {
+        guard let reader else { return }
+        switch layout {
+        case .paged:
+            guard shownLayout == .scroll else {
+                // Back before the scroll had shown: the pages never left, and keep their place.
+                reader.enterPaged(at: pagedPosition)
+                return
+            }
+            scroll.landing?.cancel()
+            pagedPosition = reader.switchToPaged()
+            pageNumber = nil
+            shownLayout = .paged
+        case .scroll:
+            guard shownLayout == .paged else { return }
+            let place = pagedPosition
+            Task {
+                guard let jump = await reader.show(place: place), model.readerPreferences.layout == .scroll else {
+                    return
+                }
+                // Fresh and at rest, as on opening: the last scroll's offsets mean nothing to this one.
+                scroll = ScrollTracking()
+                reader.scrollPhaseChanged(isScrolling: false)
+                // Set before the scroll view exists, so its first layout is already at the paragraph.
+                position.scrollTo(id: jump.anchor, anchor: .top)
+                shownLayout = .scroll
+                await land(jump, in: reader)
+            }
         }
     }
 

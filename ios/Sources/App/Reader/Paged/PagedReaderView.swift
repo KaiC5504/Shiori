@@ -70,6 +70,8 @@ struct PagedReaderView: View {
         .background(preferences.theme.paper.ignoresSafeArea())
         .onChange(of: position) { _, place in
             guard place != written else { return }
+            // Otherwise a jump back to the page last turned to would look like that turn.
+            written = place
             chapters.retry(place.chapter)
             Task { await present() }
         }
