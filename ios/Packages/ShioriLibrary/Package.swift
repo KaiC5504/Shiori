@@ -25,7 +25,10 @@ let package = Package(
                 .product(name: "SwiftSoup", package: "SwiftSoup"),
             ]
         ),
-        .testTarget(name: "ShioriLibraryTests", dependencies: ["ShioriLibrary"]),
+        .testTarget(
+            name: "ShioriLibraryTests",
+            dependencies: ["ShioriLibrary", .product(name: "ZIPFoundation", package: "ZIPFoundation")]
+        ),
     ],
     swiftLanguageModes: [.v5]
 )
