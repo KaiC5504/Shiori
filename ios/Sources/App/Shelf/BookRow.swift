@@ -3,7 +3,7 @@ import SwiftUI
 
 struct BookRow: View {
     let item: BookListItem
-    @ScaledMetric(relativeTo: .body) private var coverWidth: CGFloat = 48
+    @ScaledMetric(relativeTo: .body) private var coverWidth: CGFloat = 52
 
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
@@ -17,18 +17,12 @@ struct BookRow: View {
                             .transition(.opacity)
                     }
                 }
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(verbatim: item.book.title)
-                        .font(.headline)
-                        .foregroundStyle(Tokens.ink)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    status
-                        .font(.system(.footnote, design: .monospaced))
-                        .foregroundStyle(Tokens.inkSecondary)
-                        .fixedSize()
-                }
+                Text(verbatim: item.book.title)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(Tokens.ink)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 if let author = item.book.author {
                     Text(verbatim: author)
                         .font(.subheadline)
@@ -43,13 +37,48 @@ struct BookRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
     }
+}
 
-    @ViewBuilder
-    private var status: some View {
-        if let progress = item.progress {
-            Text(progress.fraction, format: .percent.precision(.fractionLength(0)))
-        } else {
+/// Where the reader stands in a book (spec §6.3: Unread, Chapter N, Finished).
+enum ReadingState: Equatable {
+    case unread
+    case reading(chapter: Int, of: Int, fraction: Double)
+    case finished
+
+    init(_ item: BookListItem) {
+        guard let progress = item.progress else {
+            self = .unread
+            return
+        }
+        self = progress.fraction >= 0.995
+            ? .finished
+            : .reading(chapter: progress.chapterIndex + 1, of: item.book.chapterCount, fraction: progress.fraction)
+    }
+}
+
+/// `compact` is the list's "12/18"; otherwise "Chapter 12 · 62%".
+struct ReadingStatusText: View {
+    let state: ReadingState
+    let compact: Bool
+
+    var body: some View {
+        switch state {
+        case .unread:
             Text("Unread")
+        case .finished:
+            Text("Finished")
+        case let .reading(chapter, total, fraction):
+            if compact {
+                Text(verbatim: "\(chapter)/\(total)")
+                    .monospacedDigit()
+                    .accessibilityLabel(Text("Chapter \(chapter)"))
+            } else {
+                HStack(spacing: 0) {
+                    Text("Chapter \(chapter)")
+                    Text(verbatim: " · ")
+                    Text(fraction, format: .percent.precision(.fractionLength(0)))
+                }
+            }
         }
     }
 }
