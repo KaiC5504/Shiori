@@ -114,6 +114,20 @@ struct ContentsSheet: View {
         if !chapter.title.isEmpty { return Text(verbatim: chapter.title) }
         return index == 0 ? Text("Preface") : Text("Part \(index + 1)")
     }
+
+    /// The same title as a string, in `locale` rather than the process's language, which an
+    /// in-app language switch doesn't change.
+    static func titleString(of chapter: Chapter, at index: Int, locale: Locale) -> String {
+        if !chapter.title.isEmpty { return chapter.title }
+        var resource: LocalizedStringResource
+        if index == 0 {
+            resource = "Preface"
+        } else {
+            resource = "Part \(index + 1)"
+        }
+        resource.locale = locale
+        return String(localized: resource)
+    }
 }
 
 /// A run of consecutive chapters that share a volume (or have none).
