@@ -1,0 +1,24 @@
+# XcodeGen output and Xcode state
+*.xcodeproj/
+ios/Generated/
+DerivedData/
+build/
+xcuserdata/
+*.xcuserstate
+.swiftpm/
+.build/
+
+# Screenshots of the old app show real book covers; they stay on this PC.
+/reference/screens/
+
+# Signing material and secrets never enter the repo.
+*.p8
+*.p12
+*.cer
+*.mobileprovision
+.env*
+
+.DS_Store
+Thumbs.db
+__pycache__/
+*.pyc
