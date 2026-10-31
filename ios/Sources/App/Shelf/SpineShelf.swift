@@ -101,9 +101,10 @@ struct SpineShelf: View {
         .accessibilityAction {
             if let current { open(current) }
         }
-        // A changed list keeps the same slot ids, so re-setting the crest to the same home slot
-        // wouldn't move the row; a fresh row centres on it the way the first launch does.
-        .id(ring.ids)
+        // The row keeps its scroll offset through a new width (launch lays it out narrow first) or a
+        // changed list, which leaves a different slot at the centre while `crest` still names the
+        // old one; setting `crest` to the same value can't move it. A fresh row centres on `crest`.
+        .id(RowKey(ids: ring.ids, width: metrics.viewport))
     }
 
     // The books are drawn well away from their slots' layout frames (the crest spans several),
@@ -122,6 +123,11 @@ struct SpineShelf: View {
             self.crest = target
         }
     }
+}
+
+private struct RowKey: Hashable {
+    let ids: [UUID]
+    let width: CGFloat
 }
 
 /// Which book stands in which slot. The featured books run as a ring around the home slot,
