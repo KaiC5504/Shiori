@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// What the chrome shows about the place in the book.
 struct ReaderChromeState: Equatable {
@@ -233,12 +234,23 @@ private struct ChromeSlide: ViewModifier {
 }
 
 /// The slim info line at the bottom of the page (spec §7.7, option B): the chapter on the left,
-/// the place in the book and the time on the right. It takes the reader's ink as `.secondary`,
-/// and the reader sets its horizontal margins.
+/// the place in the book, the time and the battery on the right. It takes the reader's ink as
+/// `.secondary`, and the reader sets its horizontal margins.
 struct ReaderInfoFooter: View {
     let chapterTitle: String
     let chapterIndex: Int
     let chapterCount: Int
+    let showsBattery: Bool
+
+    /// 0...1; nil when the phone can't say (always, in the simulator).
+    @State private var battery: Float?
+
+    init(chapterTitle: String, chapterIndex: Int, chapterCount: Int, showsBattery: Bool) {
+        self.chapterTitle = chapterTitle
+        self.chapterIndex = chapterIndex
+        self.chapterCount = chapterCount
+        self.showsBattery = showsBattery
+    }
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
@@ -252,6 +264,10 @@ struct ReaderInfoFooter: View {
                         Text(verbatim: "\(chapterIndex + 1) / \(chapterCount) · ")
                     }
                     Text(context.date, format: .dateTime.hour(.defaultDigits(amPM: .omitted)).minute())
+                    if showsBattery, let battery {
+                        Text(verbatim: " · ")
+                        Text(Double(battery), format: .percent.precision(.fractionLength(0)))
+                    }
                 }
             }
             .font(.system(size: 11, design: .monospaced))
@@ -262,5 +278,26 @@ struct ReaderInfoFooter: View {
         .foregroundStyle(.secondary)
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)
+        .task(id: showsBattery) { await watchBattery() }
+    }
+
+    /// The level only reads while monitoring is on, which costs power, so it is on only while
+    /// the footer shows it.
+    private func watchBattery() async {
+        let device = UIDevice.current
+        guard showsBattery else {
+            battery = nil
+            return
+        }
+        device.isBatteryMonitoringEnabled = true
+        defer { device.isBatteryMonitoringEnabled = false }
+        battery = Self.level(device)
+        for await _ in NotificationCenter.default.notifications(named: UIDevice.batteryLevelDidChangeNotification) {
+            battery = Self.level(device)
+        }
+    }
+
+    private static func level(_ device: UIDevice) -> Float? {
+        device.batteryLevel >= 0 ? device.batteryLevel : nil
     }
 }

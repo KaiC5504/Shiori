@@ -1,8 +1,9 @@
+import ShioriCore
 import ShioriLibrary
 import SwiftUI
 
 /// One continuous vertical scroll through the book in the reader's own type and paper, under
-/// the floating chrome a centre tap shows.
+/// the floating chrome a centre tap shows. Taps at the sides move a screen at a time.
 struct ReaderView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.scenePhase) private var scenePhase
@@ -21,6 +22,8 @@ struct ReaderView: View {
     @State private var footerHeight: CGFloat = 0
     @State private var tracker: ReadingSessionTracker?
     @State private var viewing: ImageViewerRequest?
+    @State private var scroll = ScrollTracking()
+    @State private var turns = 0
 
     /// Closes by setting `model.openBook = nil`.
     init(book: Book, showContents: Bool = false) {
@@ -36,6 +39,7 @@ struct ReaderView: View {
                 pages(reader)
                 edgeFades(preferences)
                 if preferences.showsInfoFooter { footer(reader) }
+                BrightnessEdge(preferences: preferences) { tap(at: $0) }
             } else if openFailed {
                 failure(theme)
             } else {
@@ -52,7 +56,7 @@ struct ReaderView: View {
             }
         }
         .onGeometryChange(for: EdgeInsets.self) { $0.safeAreaInsets } action: { safeArea = $0 }
-        .statusBarHidden(!(showsChrome || openFailed))
+        .statusBarHidden(preferences.hidesStatusBar && !(showsChrome || openFailed))
         .preferredColorScheme(theme.colorScheme)
         .sheet(item: $sheet) { kind in
             switch kind {
@@ -75,9 +79,15 @@ struct ReaderView: View {
         .environment(\.readerModel, reader)
         .environment(\.openReaderImage) { viewing = $0 }
         .task { await open() }
+        .onAppear {
+            if scenePhase == .active { ReaderScreen.hold(preferences) }
+        }
         .onDisappear {
             reader?.saveNow()
+            // A full-screen cover hides the reader too, and looking at a picture is still reading.
+            guard viewing == nil else { return }
             tracker?.stop()
+            ReaderScreen.release()
         }
         .onChange(of: scenePhase) { _, phase in
             // The app switcher only makes the scene inactive, and a swipe-kill from there
@@ -85,8 +95,18 @@ struct ReaderView: View {
             if phase != .active {
                 reader?.saveNow()
                 tracker?.pause()
+                ReaderScreen.release()
+            } else {
+                ReaderScreen.hold(model.readerPreferences)
             }
         }
+        .onChange(of: preferences.brightness) { holdScreen() }
+        .onChange(of: preferences.keepsScreenAwake) { holdScreen() }
+        .shioriHaptic(.selection, trigger: turns)
+    }
+
+    private func holdScreen() {
+        if scenePhase == .active { ReaderScreen.hold(model.readerPreferences) }
     }
 
     private func pages(_ reader: ReaderModel) -> some View {
@@ -109,9 +129,14 @@ struct ReaderView: View {
         .onChange(of: model.readerPreferences.typography) { keepPlace(in: reader) }
         .onChange(of: viewport.width) { keepPlace(in: reader) }
         .onScrollPhaseChange { _, phase in
-            reader.scrollPhaseChanged(isScrolling: phase != .idle)
+            scroll.phase = phase
+            // A tap's scroll counts until it is pinned to a paragraph again (see `settleTurn`).
+            reader.scrollPhaseChanged(isScrolling: phase != .idle || scroll.landing != nil)
             if phase == .interacting, showsChrome { setChrome(false) }
         }
+        .onScrollGeometryChange(for: ScrollGeometry.self) { $0 } action: { _, geometry in scroll.geometry = geometry }
+        // Not a second tracking signal: only read once, to pin a tap's scroll.
+        .onScrollTargetVisibilityChange(idType: ParagraphAnchor.self, threshold: 0.01) { scroll.visible = $0 }
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { viewport = $0 }
         .onTapGesture(coordinateSpace: .global) { location in tap(at: location) }
         .accessibilityAction(.magicTap) { setChrome(!showsChrome) }
@@ -137,7 +162,8 @@ struct ReaderView: View {
     private func footer(_ reader: ReaderModel) -> some View {
         let margins = TypographyAttributes.margins(model.readerPreferences.typography)
         return ReaderInfoFooter(chapterTitle: chapterTitle(reader), chapterIndex: reader.currentChapter,
-                                chapterCount: reader.chapters.count)
+                                chapterCount: reader.chapters.count,
+                                showsBattery: model.readerPreferences.showsBattery)
             .foregroundStyle(model.readerPreferences.theme.inkSecondary)
             .padding(.leading, margins.left)
             .padding(.trailing, margins.right)
@@ -154,18 +180,21 @@ struct ReaderView: View {
     /// The footer sits in the home indicator's band, just above the indicator.
     private var footerLift: CGFloat { max(safeArea.bottom - 14, 6) }
 
+    /// How far the solid paper reaches up from the bottom edge: the home indicator's band, or
+    /// the footer where it stands taller.
+    private var bottomCover: CGFloat {
+        model.readerPreferences.showsInfoFooter ? max(safeArea.bottom, footerLift + footerHeight + 4) : safeArea.bottom
+    }
+
     /// Paper over the safe areas, fading out across the margins, so text scrolling off the
     /// page leaves softly and never runs under the island or the footer.
     private func edgeFades(_ preferences: ReaderPreferences) -> some View {
         let margins = TypographyAttributes.margins(preferences.typography)
         let paper = preferences.theme.paper
-        let bottom = preferences.showsInfoFooter
-            ? max(safeArea.bottom, footerLift + footerHeight + 4)
-            : safeArea.bottom
         return VStack(spacing: 0) {
             Self.fade(paper, solid: safeArea.top, fading: margins.top, from: .top)
             Spacer(minLength: 0)
-            Self.fade(paper, solid: bottom, fading: margins.bottom, from: .bottom)
+            Self.fade(paper, solid: bottomCover, fading: margins.bottom, from: .bottom)
         }
         .ignoresSafeArea()
         .allowsHitTesting(false)
@@ -279,6 +308,8 @@ struct ReaderView: View {
     private func close() {
         reader?.saveNow()
         tracker?.stop()
+        // Now rather than on disappear, so the brightness is back while the reader slides away.
+        ReaderScreen.release()
         model.openBook = nil
     }
 
@@ -305,8 +336,60 @@ struct ReaderView: View {
             setChrome(false)
             return
         }
-        let centre = viewport.insetBy(dx: viewport.width * 0.25, dy: viewport.height * 0.2)
-        if centre.contains(point) { setChrome(true) }
+        let preferences = model.readerPreferences
+        switch TapZones.action(x: point.x - viewport.minX, y: point.y - viewport.minY,
+                               width: viewport.width, height: viewport.height,
+                               layout: preferences.tapLayout, bothSidesForward: preferences.bothSidesForward) {
+        case .menu: setChrome(true)
+        case .forward: turn(by: 1)
+        case .back: turn(by: -1)
+        }
+    }
+
+    /// Moves the text a screen less one line, so the line that was last is now first. Only from
+    /// rest: while a jump or hold lands, or the text is moving, the offset isn't a place yet.
+    private func turn(by direction: CGFloat) {
+        guard let reader, !reader.isSettling, scroll.phase == .idle, let geometry = scroll.geometry else { return }
+        let insets = geometry.contentInsets
+        let lineHeight = ReaderStyle(model.readerPreferences).lineHeight
+        // The insets hold the safe areas and the margins; the footer can reach a little higher.
+        let page = geometry.containerSize.height - insets.top - insets.bottom - (bottomCover - safeArea.bottom)
+        let step = max(page - lineHeight, lineHeight)
+        let top = -insets.top
+        let bottom = max(top, geometry.contentSize.height + insets.bottom - geometry.containerSize.height)
+        let target = min(max(geometry.contentOffset.y + direction * step, top), bottom)
+        guard abs(target - geometry.contentOffset.y) > 1 else { return }
+        scroll.landing?.cancel()
+        reader.scrollPhaseChanged(isScrolling: true)
+        if reduced {
+            position.scrollTo(y: target)
+        } else {
+            withAnimation(.smooth(duration: 0.35)) { position.scrollTo(y: target) }
+        }
+        turns += 1
+        scroll.landing = Task { await settleTurn(in: reader) }
+    }
+
+    /// A scroll to an offset leaves the position holding no paragraph, so nothing tracks or saves
+    /// the new place, and a chapter joining above would push the text down under the reader. Once
+    /// the scroll is at rest, this pins the position to the paragraph at the top again, as if the
+    /// reader had scrolled there, and lets chapters join above. If the scroll view already named
+    /// one, or a jump has taken over, it leaves the position alone.
+    private func settleTurn(in reader: ReaderModel) async {
+        try? await Task.sleep(for: .milliseconds(reduced ? 80 : 400))
+        var waits = 0
+        while scroll.phase != .idle, waits < 40, !Task.isCancelled {
+            try? await Task.sleep(for: .milliseconds(50))
+            waits += 1
+        }
+        guard !Task.isCancelled else { return }
+        scroll.landing = nil
+        if !reader.isSettling, position.viewID(type: ParagraphAnchor.self) == nil, let top = scroll.topVisible {
+            position.scrollTo(id: top, anchor: .top)
+            // Marks the paragraph as where the reader is rather than where to scroll.
+            position.isPositionedByUser = true
+        }
+        reader.scrollPhaseChanged(isScrolling: scroll.phase != .idle)
     }
 
     private func setChrome(_ visible: Bool) {
@@ -320,4 +403,18 @@ private enum ReaderSheet: Identifiable {
     case contents, appearance
 
     var id: Self { self }
+}
+
+/// What a tap needs to move the text. It is written on every scroll frame, so it is a plain
+/// reference: those writes never re-render the reader.
+private final class ScrollTracking {
+    var geometry: ScrollGeometry?
+    var phase: ScrollPhase = .idle
+    var visible: [ParagraphAnchor] = []
+    /// A tap's scroll that hasn't been pinned to a paragraph yet.
+    var landing: Task<Void, Never>?
+
+    var topVisible: ParagraphAnchor? {
+        visible.min { ($0.chapter, $0.block) < ($1.chapter, $1.block) }
+    }
 }
