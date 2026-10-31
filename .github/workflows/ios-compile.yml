@@ -39,27 +39,29 @@ jobs:
       - name: Generate project
         run: cd ios && xcodegen generate
 
-      # Screenshots are reviewed at the 17 Pro Max's size (1320 x 2868), so ask for it by
-      # name; any other iPhone only keeps the check running.
+      # Screenshots are reviewed at the 17 Pro Max's size (1320 x 2868). The image ships
+      # some iPhones but not necessarily that one, so create it when the runtime supports
+      # it; any other iPhone only keeps the check running.
       - name: Boot a simulator
         id: sim
         run: |
-          read -r UDID NAME_OK NAME <<<"$(xcrun simctl list devices available -j | python3 -c "
-          import json, re, sys
-          devices = json.load(sys.stdin)['devices']
-          def version(runtime):
-              m = re.search(r'iOS-(\d+)-(\d+)(?:-(\d+))?$', runtime)
-              return tuple(int(x or 0) for x in m.groups()) if m else ()
-          runtimes = sorted((r for r in devices if version(r)), key=version, reverse=True)
-          for runtime in runtimes:
-              for d in devices[runtime]:
-                  if d['name'] == 'iPhone 17 Pro Max' and d['isAvailable']:
-                      print(d['udid'], 'yes', d['name']); sys.exit()
-          last = None
-          for runtime in runtimes:
-              for d in devices[runtime]:
-                  if 'iPhone' in d['name'] and d['isAvailable']:
-                      last = d
+          read -r UDID NAME_OK NAME <<<"$(python3 -c "
+          import json, subprocess, sys
+          WANT = 'iPhone 17 Pro Max'
+          def simctl(*args):
+              return json.loads(subprocess.check_output(['xcrun', 'simctl', 'list', *args, '-j']))
+          runtimes = [r for r in simctl('runtimes', 'available')['runtimes']
+                      if r['identifier'].startswith('com.apple.CoreSimulator.SimRuntime.iOS')]
+          runtime = max(runtimes, key=lambda r: tuple(int(x) for x in r['version'].split('.')))
+          devices = simctl('devices', 'available')['devices'].get(runtime['identifier'], [])
+          for d in devices:
+              if d['name'] == WANT:
+                  print(d['udid'], 'yes', d['name']); sys.exit()
+          for t in runtime.get('supportedDeviceTypes', []):
+              if t['name'] == WANT:
+                  udid = subprocess.check_output(['xcrun', 'simctl', 'create', WANT, t['identifier'], runtime['identifier']], text=True).strip()
+                  print(udid, 'yes', WANT); sys.exit()
+          last = [d for d in devices if 'iPhone' in d['name']][-1]
           print(last['udid'], 'no', last['name'])
           ")"
           if [ "$NAME_OK" != yes ]; then
