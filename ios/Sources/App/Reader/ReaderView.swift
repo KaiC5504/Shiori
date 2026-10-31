@@ -146,8 +146,9 @@ struct ReaderView: View {
         .onChange(of: viewport.width) { keepPlace(in: reader) }
         .onScrollPhaseChange { _, phase in
             scroll.phase = phase
+            if phase == .interacting { scroll.unanchored = false }
             // A tap's scroll counts until it is pinned to a paragraph again (see `settleTurn`).
-            reader.scrollPhaseChanged(isScrolling: phase != .idle || scroll.landing != nil)
+            reader.scrollPhaseChanged(isScrolling: phase != .idle || scroll.landing != nil || scroll.unanchored)
             if phase == .interacting, showsChrome { setChrome(false) }
         }
         .onScrollGeometryChange(for: ScrollGeometry.self) { $0 } action: { _, geometry in scroll.geometry = geometry }
@@ -381,6 +382,11 @@ struct ReaderView: View {
     /// `scrollTo` only takes effect at the next layout, so tracking resumes a few frames later.
     private func land(_ jump: ReaderJump, in reader: ReaderModel) async {
         try? await Task.sleep(for: .milliseconds(300))
+        // A jump scrolls to a paragraph, which anchors the position again.
+        if scroll.unanchored {
+            scroll.unanchored = false
+            reader.scrollPhaseChanged(isScrolling: scroll.phase != .idle)
+        }
         reader.finishJump(jump)
         // A short drag that came to rest during the hold won't move viewID again, so catch it up.
         if let anchor = position.viewID(type: ParagraphAnchor.self) { reader.visibleAnchorChanged(anchor) }
@@ -512,6 +518,7 @@ struct ReaderView: View {
             withAnimation(.smooth(duration: 0.35)) { position.scrollTo(y: target) }
         }
         turns += 1
+        scroll.unanchored = true
         scroll.landing = Task { await settleTurn(in: reader) }
     }
 
@@ -537,7 +544,7 @@ struct ReaderView: View {
             reader.visibleAnchorChanged(top)
             tracker?.ping(chapterIndex: top.chapter)
         }
-        reader.scrollPhaseChanged(isScrolling: scroll.phase != .idle)
+        reader.scrollPhaseChanged(isScrolling: scroll.phase != .idle || scroll.unanchored)
     }
 
     private func setChrome(_ visible: Bool) {
@@ -561,6 +568,10 @@ private final class ScrollTracking {
     var visible: [ParagraphAnchor] = []
     /// A tap's scroll that hasn't been pinned to a paragraph yet.
     var landing: Task<Void, Never>?
+    /// After a tap's scroll the position isn't anchored to a paragraph (pinning doesn't take),
+    /// so a chapter joining above would push the text down. It counts as scrolling, which only
+    /// stops joins above, until a finger moves the text and the scroll view anchors it again.
+    var unanchored = false
 
     var topVisible: ParagraphAnchor? {
         visible.min { ($0.chapter, $0.block) < ($1.chapter, $1.block) }
