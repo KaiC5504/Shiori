@@ -100,6 +100,9 @@ final class ReaderModel {
     /// rows inserted above it: the text slides into the new chapter, which asks for another
     /// one above, and the reader runs away upwards. Chapters join above only at rest.
     @ObservationIgnored private var isScrolling = false
+    /// The paragraph `holdPlace` is putting back at the top, and the generation it took; any
+    /// jump after it makes it stale.
+    @ObservationIgnored private var held: (generation: Int, anchor: ParagraphAnchor)?
 
     /// Chapters kept joined on each side of the visible one.
     private static let lead = 2
@@ -192,6 +195,26 @@ final class ReaderModel {
             guard !Task.isCancelled else { return }
             self?.saveNow()
         }
+    }
+
+    /// New typography or a new width re-lays out every row, and while it settles the scroll
+    /// view reports paragraphs the reader never reached, which would move the chapter and join
+    /// others. So tracking holds as for a jump, on the paragraph that was at the top, and the
+    /// rows stay. Nil while a jump is landing: it lands on its own target.
+    func holdPlace() -> ReaderJump? {
+        let anchor: ParagraphAnchor
+        if !isJumping, let lastVisible {
+            anchor = lastVisible
+        } else if let held, held.generation == jumpGeneration {
+            anchor = held.anchor
+        } else {
+            return nil
+        }
+        jumpGeneration += 1
+        isJumping = true
+        extendTask = nil
+        held = (jumpGeneration, anchor)
+        return ReaderJump(generation: jumpGeneration, anchor: anchor)
     }
 
     func scrollPhaseChanged(isScrolling: Bool) {
