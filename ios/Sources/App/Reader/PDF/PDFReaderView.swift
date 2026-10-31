@@ -108,6 +108,8 @@ struct PDFReaderView: View {
             if phase != .active {
                 save()
                 tracker?.pause()
+            } else {
+                tracker?.ping(chapterIndex: page)
             }
         }
     }
@@ -184,6 +186,8 @@ struct PDFReaderView: View {
         opened = OpenedPDF(document: loaded.document, outline: PDFOutlineRow.rows(of: loaded.document),
                            renderer: PDFPageRenderer(url: url), startPage: start)
         tracker = ReadingSessionTracker(database: model.database, bookId: book.id)
+        // The first page counts as reading before any turn or tap.
+        tracker?.ping(chapterIndex: start)
         #if DEBUG
         if DemoLaunch.showsChrome { showsChrome = true }
         if DemoLaunch.pdf == "thumbs" {
