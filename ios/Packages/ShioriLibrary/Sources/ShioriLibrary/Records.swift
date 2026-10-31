@@ -20,10 +20,14 @@ public struct Book: Codable, Identifiable, Equatable, Sendable, FetchableRecord,
     public var addedAt: Date
     public var chapterCount: Int
     public var hasCover: Bool
+    /// When an import last replaced this book's file in place (spec §8.4).
+    public var lastUpdatedAt: Date?
+    /// Chapters that update added; nil means the text changed without new chapters.
+    public var lastUpdateAddedChapters: Int?
 
     public init(id: UUID, title: String, author: String?, format: BookFormat, sourceIdentifier: String?,
                 titleAuthorKey: String, contentHash: String, originalFileName: String, addedAt: Date,
-                chapterCount: Int, hasCover: Bool) {
+                chapterCount: Int, hasCover: Bool, lastUpdatedAt: Date? = nil, lastUpdateAddedChapters: Int? = nil) {
         self.id = id
         self.title = title
         self.author = author
@@ -35,6 +39,8 @@ public struct Book: Codable, Identifiable, Equatable, Sendable, FetchableRecord,
         self.addedAt = addedAt
         self.chapterCount = chapterCount
         self.hasCover = hasCover
+        self.lastUpdatedAt = lastUpdatedAt
+        self.lastUpdateAddedChapters = lastUpdateAddedChapters
     }
 }
 

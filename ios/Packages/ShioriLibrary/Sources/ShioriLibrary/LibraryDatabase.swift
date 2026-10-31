@@ -3,7 +3,7 @@ import GRDB
 import os
 
 public final class LibraryDatabase: Sendable {
-    private let queue: DatabaseQueue
+    let queue: DatabaseQueue
     private static let log = Logger(subsystem: "com.kaichuan.shiori", category: "database")
 
     public init(path: URL) throws {
@@ -56,6 +56,35 @@ public final class LibraryDatabase: Sendable {
                 t.column("offset", .integer).notNull()
                 t.column("fraction", .double).notNull()
                 t.column("updatedAt", .datetime).notNull()
+            }
+        }
+        migrator.registerMigration("v2") { db in
+            try db.alter(table: "book") { t in
+                t.add(column: "lastUpdatedAt", .datetime)
+                t.add(column: "lastUpdateAddedChapters", .integer)
+            }
+            try db.create(table: "importLog") { t in
+                t.autoIncrementedPrimaryKey("id")
+                t.column("batchId", .blob).notNull()
+                t.column("date", .datetime).notNull()
+                t.column("origin", .text).notNull()
+                t.column("position", .integer).notNull()
+                t.column("outcome", .text).notNull()
+            }
+            try db.create(index: "importLog_date", on: "importLog", columns: ["date"])
+            try db.create(table: "removedBook") { t in
+                t.primaryKey("contentHash", .text)
+                t.column("identityKey", .text).notNull()
+                t.column("title", .text).notNull()
+                t.column("removedAt", .datetime).notNull()
+            }
+            try db.create(index: "removedBook_identityKey", on: "removedBook", columns: ["identityKey"])
+            try db.create(table: "scannedFile") { t in
+                t.primaryKey("path", .text)
+                t.column("size", .integer).notNull()
+                t.column("modifiedAt", .datetime).notNull()
+                t.column("contentHash", .text)
+                t.column("scannedAt", .datetime).notNull()
             }
         }
         return migrator
