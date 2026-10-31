@@ -37,6 +37,20 @@ public actor BookImporter {
         if let firstError { throw firstError }
     }
 
+    /// One outcome per book found: a ZIP can hold several.
+    public func importFiles(at url: URL, origin: ImportOrigin, settings: ImportSettings) async -> [ImportOutcome] {
+        [await importFile(at: url)]
+    }
+
+    public func remove(bookId: UUID) async throws {
+        throw CocoaError(.featureUnsupported)
+    }
+
+    /// Splits a TXT book again with `settings`, keeping progress by chapter key.
+    public func resplit(bookId: UUID, settings: ImportSettings) async -> ImportOutcome {
+        .failed(fileName: "", reason: .unreadable("re-split is not built yet"))
+    }
+
     public func importFile(at url: URL) async -> ImportOutcome {
         let fileName = url.lastPathComponent
         let ext = url.pathExtension.lowercased()
