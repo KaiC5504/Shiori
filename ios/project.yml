@@ -31,8 +31,8 @@ settings:
 packages:
   ShioriCore:
     path: Packages/ShioriCore
-#   ShioriLibrary:
-#     path: Packages/ShioriLibrary
+  ShioriLibrary:
+    path: Packages/ShioriLibrary
 
 targets:
   Shiori:
@@ -42,7 +42,7 @@ targets:
       - path: Sources/App
     dependencies:
       - package: ShioriCore
-    #   - package: ShioriLibrary
+      - package: ShioriLibrary
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.kaichuan.shiori

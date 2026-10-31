@@ -33,6 +33,10 @@ jobs:
       - name: ShioriCore tests
         run: swift test --package-path ios/Packages/ShioriCore
 
+      # GRDB, ZIP, decoding and the importer: these run nowhere but here.
+      - name: ShioriLibrary tests
+        run: swift test --package-path ios/Packages/ShioriLibrary
+
       - name: Install XcodeGen
         run: brew install xcodegen
 
