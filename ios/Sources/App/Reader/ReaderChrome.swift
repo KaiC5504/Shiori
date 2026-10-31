@@ -93,16 +93,17 @@ struct ReaderChrome: View {
         .padding(.top, insets.top > 0 ? 0 : 10)
         .padding(.bottom, 10)
         .background {
-            // The page scrolls under the title; paper fading down keeps both the title and the
-            // status bar legible on any theme.
-            LinearGradient(stops: [.init(color: paper, location: 0),
-                                   .init(color: paper.opacity(0.88), location: 0.6),
-                                   .init(color: paper.opacity(0), location: 1)],
-                           startPoint: .top, endPoint: .bottom)
-                .padding(.bottom, -28)
-                .ignoresSafeArea(edges: .top)
-                .allowsHitTesting(false)
-                .accessibilityHidden(true)
+            // The page scrolls under the title. Solid paper down to the bar's bottom edge keeps the
+            // title and status bar legible on any theme; the short fade below hides the cut.
+            VStack(spacing: 0) {
+                paper
+                LinearGradient(colors: [paper, paper.opacity(0)], startPoint: .top, endPoint: .bottom)
+                    .frame(height: 28)
+            }
+            .padding(.bottom, -28)
+            .ignoresSafeArea(edges: .top)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
         }
     }
 
