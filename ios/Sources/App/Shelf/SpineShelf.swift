@@ -12,6 +12,9 @@ struct SpineShelf: View {
 
     @Environment(\.motionReduced) private var reduced
     @State private var crest: Int?
+    // An explicit position, because re-centring has to work even when the crest's slot number
+    // hasn't changed: after launch lays the row out narrow first, or when the list changes.
+    @State private var position: ScrollPosition
     @State private var width: CGFloat = 0
     @State private var scrolling = false
     @State private var ticks = 0
@@ -20,7 +23,9 @@ struct SpineShelf: View {
         self.books = books
         self.settled = settled
         self.open = open
-        _crest = State(initialValue: ShelfRing(books).home)
+        let home = ShelfRing(books).home
+        _crest = State(initialValue: home)
+        _position = State(initialValue: ScrollPosition(id: home, anchor: .center))
     }
 
     var body: some View {
@@ -42,7 +47,8 @@ struct SpineShelf: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
-        .onChange(of: ring.ids) { crest = ring.home }
+        .onChange(of: ring.ids) { move(to: ring.home) }
+        .onChange(of: width) { move(to: crest ?? ring.home) }
         .shioriHaptic(.selection, trigger: ticks)
     }
 
@@ -76,7 +82,10 @@ struct SpineShelf: View {
         .scrollIndicators(.hidden)
         .contentMargins(.horizontal, (metrics.viewport - metrics.pitch) / 2, for: .scrollContent)
         .scrollTargetBehavior(.viewAligned)
-        .scrollPosition(id: $crest, anchor: .center)
+        .scrollPosition($position, anchor: .center)
+        .onChange(of: position.viewID(type: Int.self)) { _, slot in
+            if let slot { crest = slot }
+        }
         .onScrollPhaseChange { _, phase in scrolling = phase.isScrolling }
         .onChange(of: crest) {
             if scrolling { ticks += 1 }
@@ -93,18 +102,14 @@ struct SpineShelf: View {
         .accessibilityAdjustableAction { direction in
             guard let crest else { return }
             switch direction {
-            case .increment: self.crest = min(crest + 1, ring.slotCount - 1)
-            case .decrement: self.crest = max(crest - 1, 0)
+            case .increment: move(to: min(crest + 1, ring.slotCount - 1))
+            case .decrement: move(to: max(crest - 1, 0))
             @unknown default: break
             }
         }
         .accessibilityAction {
             if let current { open(current) }
         }
-        // The row keeps its scroll offset through a new width (launch lays it out narrow first) or a
-        // changed list, which leaves a different slot at the centre while `crest` still names the
-        // old one; setting `crest` to the same value can't move it. A fresh row centres on `crest`.
-        .id(RowKey(ids: ring.ids, width: metrics.viewport))
     }
 
     // The books are drawn well away from their slots' layout frames (the crest spans several),
@@ -120,14 +125,14 @@ struct SpineShelf: View {
         let target = crest + (offset < 0 ? -steps : steps)
         guard (0..<ring.slotCount).contains(target) else { return }
         withAnimation(Motion.animation(.smooth(duration: 0.5), reduced: reduced)) {
-            self.crest = target
+            move(to: target)
         }
     }
-}
 
-private struct RowKey: Hashable {
-    let ids: [UUID]
-    let width: CGFloat
+    private func move(to slot: Int) {
+        crest = slot
+        position.scrollTo(id: slot, anchor: .center)
+    }
 }
 
 /// Which book stands in which slot. The featured books run as a ring around the home slot,
