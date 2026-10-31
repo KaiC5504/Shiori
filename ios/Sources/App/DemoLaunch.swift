@@ -96,6 +96,14 @@ enum DemoLaunch {
         if let importPath {
             await model.importFiles([URL(filePath: importPath)], origin: .picker)
         }
+        // One book part-read, so the shelf shows its ribbon and chapter status.
+        if usesDemoData, !kept, !usesLongBook, let item = try? model.database.bookList().first(where: { $0.progress == nil }),
+           let chapters = try? model.database.chapters(bookId: item.book.id), chapters.count > 3 {
+            try? model.database.save(ShioriLibrary.Progress(
+                bookId: item.book.id, chapterIndex: 2, keyTitle: chapters[2].keyTitle,
+                keyOccurrence: chapters[2].keyOccurrence, offset: 0,
+                fraction: 2 / Double(chapters.count), updatedAt: .now))
+        }
         if marksUpdated, let first = try? model.database.bookList().first {
             try? model.database.markUpdated(bookId: first.id, addedChapters: 37, at: .now)
         }
