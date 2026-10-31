@@ -11,6 +11,11 @@ generated, not real art.
 | `2-bar.png`: bottom bar | **A, glass lens** | §5.1 |
 | `3-settings.png`: Settings tab | **B, summary + grouped rows** | §9 |
 | `4-tones.png`: dark mode | **A, neutral charcoal `#1F1F1F`** | §4.2 |
+| `5-reader-menus.png`: reader menus | **B, one bottom panel** | §7.7 |
+| `6-reader-aa.png`: Appearance sheet | **B, controls inline** | §7.7 |
+| `7-reader-info.png`: page info | **B, footer only** | §7.7 |
+
+`reader-concepts.html` is the source for sheets 5–7. Their sample text is 《桃花源记》.
 
 Also decided alongside these:
 

@@ -339,7 +339,18 @@ Below the carousel is the full library.
 - This book's reading time and progress.
 - The table of contents grouped by volume, with collapsible volumes. It must be
   virtualised for 5,000 chapters.
-- **Start reading** or **Continue** (accent filled), and **Edit**.
+- **Start reading** or **Continue** (accent filled), and **Edit**. Both float as glass
+  buttons at the bottom while the contents scroll underneath.
+
+**Layout** (from `reference/screens/06-book-detail-dark.png`, as an idea, not a copy):
+
+- The cover sits on the left with a big bold title beside it.
+- Under the title: the author with a chevron, the chapter count, the import date, and
+  the book's `SH-` serial in a small stamped box.
+- A "Reading: <chapter>" progress card drawn with corner-bracket frame marks, showing
+  the in-chapter progress.
+- A `02 / CONTENTS` section label with the item count and an order toggle. Rows are
+  numbered (`01`, `02`…), and the last-read row says "Last read".
 
 ### 6.6 Edit book
 
@@ -467,11 +478,38 @@ All of this is the builder's call, within these requirements:
 
 A tap in the centre shows the floating glass chrome.
 
-- **Top bar:** back, the book title (opens the detail page), Listen, and More.
-- **Bottom:**
-  - a chapter progress slider, with previous and next chapter
-  - a tool dock: Contents, Notes and bookmarks, Appearance (Aa), Search, and Day/night
-- **Info strip** (optional): chapter title, page number in the chapter, time and battery.
+KaiC chose this layout from the samples (`docs/design/concepts/5-reader-menus.png`,
+option B; the reference is `reference/screens/08-reader-menus-dark.png`).
+
+- **Top:** a round glass back button, the book title in the middle (opens the detail
+  page), and a round glass Listen button. The page's info footer fades while the menus
+  are open.
+- **Bottom: one glass panel** your thumb reaches, holding:
+  - a line with the chapter name on the left and "chapter / total · %" on the right in
+    the archive monospace
+  - the chapter slider with previous and next chapter buttons
+  - a hairline, then five tools: Contents, Notes (bookmarks, notes and highlights),
+    Appearance (Aa), Find, Day/Night
+- **Info footer** (on by default; KaiC chose it from `7-reader-info.png`, option B):
+  - one slim line at the bottom of the page
+  - the chapter name on the left
+  - "page / pages in chapter · time · battery" on the right, in the archive monospace
+  - no header: the chapter title is part of the text
+
+  Settings can switch it to the old header + footer, a hairline progress line only, or
+  nothing.
+- **Sheets** (Contents, Notes, Find) rise from the bottom as glass sheets with a grabber,
+  a bold title and a round close button, as in the reference screenshots 10–13.
+- **Find:** the sheet toggles between This chapter and Whole book.
+
+**Appearance (Aa) sheet:** KaiC chose controls inline over tiles or tabs
+(`6-reader-aa.png`, option B). The page re-lays out live behind the sheet. In order:
+
+1. Text size (A− / value / A+) and the current font (opens the font list).
+2. Line spacing: Compact, Standard, Loose, Custom.
+3. Paper theme swatches.
+4. Page turn: Scroll, Paragraph relay, Paper, Curl.
+5. "More typography, screen and gestures" opens the full set (§7.4–§7.6).
 
 ### 7.8 Contents
 

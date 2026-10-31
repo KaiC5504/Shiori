@@ -24,8 +24,14 @@ ideas, not a copy. All are in dark mode.
 | `19-settings-dark.png` | The old settings cards |
 | `19b-settings-effects-dark.png` | A settings sub-page with sliders (that page itself is cut) |
 | `21-stats-dark.png` | Stats overview: big numerals, a highlight card, a section bar |
-
-The reader has no screenshots. The spec (§7) describes it in words.
+| `06-book-detail-dark.png` | Book detail: cover beside a big title, author link, chapter count, import date, a stamped serial, a "读到…" progress card with corner brackets, numbered contents, floating 配置书籍 / 继续阅读 buttons |
+| `07-reader-page-dark.png` | A page: "目录 2 / 4834" and "EPUB / TEXT" header, big chapter title, footer with the chapter and % |
+| `08-reader-menus-dark.png` | Menus open: round glass back and listen buttons, title, a floating chapter slider, a six-item dock |
+| `08b-reader-menus-light.png` | The same in light, with Night in place of Day |
+| `09-reader-appearance-sheet-dark.png` | The 外观 sheet: 2×2 tiles (字体, 段落, 屏幕, 主题) with current values |
+| `10-reader-find-sheet-dark.png` | The Find sheet: in-chapter or whole-book toggle, field, hint |
+| `12-reader-contents-dark.png` | Contents: numbered rows, current row marked 正在阅读, search and order buttons |
+| `13-reader-bookmarks-sheet-dark.png` | The Bookmarks sheet: count, + to add, a hint |
 
 ## Original capture list
 

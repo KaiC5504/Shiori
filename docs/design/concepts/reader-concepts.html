@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>Shiori reader concepts</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#121212;font-family:"Microsoft YaHei UI","PingFang SC","Segoe UI",sans-serif;color:#EDEDED}
+.sheet{padding:28px;width:max-content}
+.sheet h1{font-size:26px;font-weight:700;margin:0 0 4px;color:#fff}
+.sheet p.note{font-size:15px;color:#A8A8A8;margin:0 0 20px;max-width:1340px;line-height:1.45}
+.row{display:flex;gap:28px;align-items:flex-start}
+.opt{display:flex;flex-direction:column;gap:10px}
+.opt .tag{font-size:18px;font-weight:700;color:#fff}
+.opt .tag span{font-weight:400;color:#A8A8A8;font-size:14px;margin-left:8px}
+.phone{width:440px;height:956px;border-radius:54px;position:relative;overflow:hidden;
+  --bg:#1F1F1F;--surf:#2A2A2A;--line:#363636;--ink:#E6E6E6;--sub:#8F8F8F;--btn:#3A3A3A;
+  background:var(--bg);color:var(--ink);border:1px solid #333}
+.status{height:54px;display:flex;justify-content:space-between;align-items:center;padding:14px 34px 0 46px;font-weight:600;font-size:16px}
+.mono{font-family:Consolas,monospace;letter-spacing:2px;font-size:11px;color:var(--sub)}
+.page{padding:0 28px}
+.ch{font-size:30px;font-weight:800;margin:12px 0 22px}
+.p{font-size:20px;line-height:1.72;margin-bottom:18px;font-family:"SimSun","Songti SC",serif;color:var(--ink)}
+.glass{background:color-mix(in srgb,#4a4a4a 70%,transparent);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.08)}
+.rb{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.top{position:absolute;top:58px;left:16px;right:16px;display:flex;align-items:center;gap:10px}
+.top .t{flex:1;font-weight:700;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+.dock{position:absolute;left:16px;right:16px;bottom:30px;border-radius:30px;display:flex;justify-content:space-around;padding:10px 6px}
+.di{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--ink)}
+.sl{height:4px;border-radius:2px;background:rgba(255,255,255,.18);position:relative;flex:1}
+.sl i{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:var(--ink)}
+.sl b{position:absolute;top:-9px;width:22px;height:22px;border-radius:50%;background:#F4F1EA;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.home{position:absolute;bottom:8px;left:50%;width:140px;height:5px;margin-left:-70px;border-radius:3px;background:var(--ink);opacity:.8}
+.dim{position:absolute;inset:0;background:rgba(0,0,0,.28)}
+.sheetp{position:absolute;left:10px;right:10px;bottom:10px;border-radius:40px;padding:14px 22px 28px}
+.grab{width:40px;height:5px;border-radius:3px;background:rgba(255,255,255,.3);margin:0 auto 14px}
+.sh-t{font-size:24px;font-weight:800;display:flex;align-items:center}
+.sh-t .x{margin-left:auto;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:400}
+.lbl{font-family:Consolas,monospace;font-size:10px;letter-spacing:2.2px;color:var(--sub);margin:16px 0 8px}
+.seg{display:flex;background:rgba(255,255,255,.07);border-radius:14px;padding:3px}
+.seg span{flex:1;text-align:center;padding:9px 0;font-size:14px;border-radius:11px;color:var(--sub)}
+.seg span.on{background:rgba(255,255,255,.16);color:var(--ink);font-weight:700}
+.tile{background:rgba(255,255,255,.06);border-radius:16px;padding:14px}
+.tile .tt{font-size:17px;font-weight:700}
+.tile .tv{font-size:13px;color:var(--sub);margin-top:22px}
+.sw{width:58px;height:58px;border-radius:14px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;font-size:11px}
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper span{width:44px;height:36px;border-radius:12px;background:rgba(255,255,255,.09);display:flex;align-items:center;justify-content:center;font-size:18px}
+</style>
+</head>
+<body>
+
+<section class="sheet" id="r1">
+<h1>5 · Reader menus: which layout?</h1>
+<p class="note">Tap the centre of the page to show them. A keeps the old app's layout: a top bar, a floating chapter slider, and a six-button dock. B merges the slider into one bottom panel with five tools. C is the quietest: a slim bottom bar with the slider and four tools, and everything else in the Aa sheet. All are Liquid Glass on the floating layer.</p>
+<div class="row" id="chrome"></div>
+</section>
+
+<section class="sheet" id="r2">
+<h1>6 · Appearance (Aa) sheet: which style?</h1>
+<p class="note">A is the old app's four tiles (font, paragraph, screen, theme) that each open a page. B puts the common controls right in the sheet (size, line height, theme swatches, page turn), with a "More" row for the rest. C splits it into tabs.</p>
+<div class="row" id="aa"></div>
+</section>
+
+<section class="sheet" id="r3">
+<h1>7 · Page info: how much around the text?</h1>
+<p class="note">A, like the old app: a header with chapter count and format, and a footer with chapter and percent. B: only a slim footer (chapter · page · time · battery). C: nothing but a hairline progress line at the bottom. Whichever you pick stays switchable in settings.</p>
+<div class="row" id="info"></div>
+</section>
+
+<script>
+const text=['晋太元中，武陵人捕鱼为业。缘溪行，忘路之远近。','忽逢桃花林，夹岸数百步，中无杂树，芳草鲜美，落英缤纷。渔人甚异之。','复前行，欲穷其林。林尽水源，便得一山，山有小口，仿佛若有光。','便舍船，从口入。初极狭，才通人。复行数十步，豁然开朗。','土地平旷，屋舍俨然，有良田美池桑竹之属。阡陌交通，鸡犬相闻。'];
+const I={
+ back:'<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#E6E6E6" stroke-width="1.8"><path d="M12.5 4l-6 6 6 6"/></svg>',
+ head:'<svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#E6E6E6" stroke-width="1.6"><path d="M4 13a7 7 0 0 1 14 0"/><rect x="3" y="12" width="4" height="6" rx="1"/><rect x="15" y="12" width="4" height="6" rx="1"/></svg>',
+ more:'<svg width="22" height="22" viewBox="0 0 22 22" fill="#E6E6E6"><circle cx="5" cy="11" r="1.6"/><circle cx="11" cy="11" r="1.6"/><circle cx="17" cy="11" r="1.6"/></svg>',
+ toc:'<svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#E6E6E6" stroke-width="1.6"><path d="M7 6h11M7 11h11M7 16h11M3.5 6h.5M3.5 11h.5M3.5 16h.5"/></svg>',
+ mark:'<svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#E6E6E6" stroke-width="1.6"><path d="M5 3h12v16l-6-4-6 4z"/></svg>',
+ aa:'<svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#E6E6E6" stroke-width="1.6"><path d="M2 18L7 5l5 13M4 13.5h6M14 18v-5.5a3 3 0 0 1 6 0V18M14 15h6"/></svg>',
+ find:'<svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#E6E6E6" stroke-width="1.6"><circle cx="10" cy="10" r="6"/><path d="M14.5 14.5l4.5 4.5"/></svg>',
+ sun:'<svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#E6E6E6" stroke-width="1.6"><circle cx="11" cy="11" r="3.5"/><path d="M11 2v2.5M11 17.5V20M2 11h2.5M17.5 11H20M4.6 4.6l1.8 1.8M15.6 15.6l1.8 1.8M4.6 17.4l1.8-1.8M15.6 6.4l1.8-1.8"/></svg>',
+ ops:'<svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#E6E6E6" stroke-width="1.6"><path d="M5 3v16M11 3v16M17 3v16"/><circle cx="5" cy="8" r="2" fill="#3a3a3a"/><circle cx="11" cy="14" r="2" fill="#3a3a3a"/><circle cx="17" cy="7" r="2" fill="#3a3a3a"/></svg>',
+ prev:'<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#E6E6E6" stroke-width="1.6"><path d="M5 4v12M15 4l-7 6 7 6z"/></svg>',
+ next:'<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#E6E6E6" stroke-width="1.6"><path d="M15 4v12M5 4l7 6-7 6z"/></svg>'};
+const status='<div class="status"><span>9:41</span><span style="font-size:13px">●●● ᯤ ▮▮▮</span></div>';
+const body=(n=5,title=true)=>`<div class="page">${title?'<div class="ch">第一章 桃花源</div>':''}${text.slice(0,n).map(t=>`<p class="p">${t}</p>`).join('')}</div>`;
+const header=`<div class="page" style="display:flex;justify-content:space-between;margin-top:14px"><span style="font-size:14px;color:var(--sub)">目录 2 / 12</span><span class="mono">EPUB / TEXT</span></div>`;
+const footer=`<div style="position:absolute;bottom:30px;left:28px;right:28px;display:flex;justify-content:space-between;font-size:13px;color:var(--sub)"><span>第一章 桃花源</span><span>8%</span></div>`;
+const hidden=`<div style="height:36px"></div>`;
+const topbar=`<div class="top"><span class="rb glass">${I.back}</span><span class="t">桃花源记</span><span class="rb glass">${I.head}</span></div>`;
+const slider=(w)=>`<div class="sl"><i style="width:${w}%"></i><b style="left:calc(${w}% - 11px)"></b></div>`;
+const di=(i,l)=>`<div class="di">${I[i]}<span>${l}</span></div>`;
+const chromeA=`${status}${hidden}${body()}<div class="dim"></div>${topbar}
+<div class="glass" style="position:absolute;left:70px;right:70px;bottom:118px;height:52px;border-radius:26px;display:flex;align-items:center;gap:16px;padding:0 18px">${I.prev}${slider(8)}${I.next}</div>
+<div class="dock glass">${di('toc','目录')}${di('mark','书签')}${di('aa','外观')}${di('ops','操作')}${di('find','查找')}${di('sun','日间')}</div><div class="home"></div>`;
+const chromeB=`${status}${hidden}${body()}<div class="dim"></div>${topbar}
+<div class="glass" style="position:absolute;left:16px;right:16px;bottom:30px;border-radius:30px;padding:16px 18px 10px">
+<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--sub);margin-bottom:12px"><span>第一章 桃花源</span><span class="mono" style="letter-spacing:1px">2 / 12 · 8%</span></div>
+<div style="display:flex;align-items:center;gap:14px">${I.prev}${slider(8)}${I.next}</div>
+<div style="height:1px;background:rgba(255,255,255,.1);margin:14px 0 10px"></div>
+<div style="display:flex;justify-content:space-around">${di('toc','目录')}${di('mark','笔记')}${di('aa','外观')}${di('find','查找')}${di('sun','日间')}</div></div><div class="home"></div>`;
+const chromeC=`${status}${hidden}${body()}<div class="dim" style="background:rgba(0,0,0,.15)"></div>
+<div class="top"><span class="rb glass">${I.back}</span><span class="t" style="text-align:left;padding-left:6px">桃花源记<div style="font-size:12px;color:var(--sub);font-weight:400">第一章 · 8%</div></span><span class="rb glass">${I.head}</span><span class="rb glass">${I.more}</span></div>
+<div class="glass" style="position:absolute;left:16px;right:16px;bottom:30px;height:60px;border-radius:30px;display:flex;align-items:center;gap:18px;padding:0 20px">${I.toc}${slider(8)}${I.find}${I.aa}${I.sun}</div><div class="home"></div>`;
+document.getElementById('chrome').innerHTML=[['A','Old layout: top bar + slider + six-button dock',chromeA],['B','One bottom panel',chromeB],['C','Slim bar, rest in Aa',chromeC]].map(([k,n,h])=>`<div class="opt"><div class="tag">${k}<span>${n}</span></div><div class="phone">${h}</div></div>`).join('');
+
+const base=`${status}${header}${body(3)}<div class="dim"></div>`;
+const sheet=(inner)=>`<div class="sheetp glass" style="background:color-mix(in srgb,#3a3a3a 88%,transparent)"><div class="grab"></div>${inner}</div>`;
+const aaA=base+sheet(`<div class="sh-t">外观<span class="x">✕</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">
+${[['字体','19 pt · 常规'],['段落','1.72 倍行距'],['屏幕','页边距 · 状态栏'],['主题','跟随外观']].map(([t,v])=>`<div class="tile"><div class="tt">${t}</div><div class="tv">${v}</div></div>`).join('')}</div>`);
+const swatches=[['跟随','#1F1F1F','#E6E6E6'],['奶白','#F4EFE6','#2a2a2a'],['羊皮纸','#E9DCC3','#3a2f22'],['浅苔','#DDE5D6','#25301f'],['夜读','#101010','#9a9a9a']];
+const aaB=base+sheet(`<div class="sh-t">外观<span class="x">✕</span></div>
+<div class="lbl">TEXT / 字号</div><div class="stepper"><span>A-</span><div style="flex:1;text-align:center;font-size:18px;font-weight:700">19 pt</div><span>A+</span><span style="width:auto;padding:0 12px;font-size:14px">霞鹜文楷 ›</span></div>
+<div class="lbl">SPACING / 行距</div><div class="seg"><span>紧凑</span><span class="on">标准</span><span>宽松</span><span>自定义</span></div>
+<div class="lbl">PAPER / 主题</div><div style="display:flex;gap:10px">${swatches.map(([n,b,f],i)=>`<div class="sw" style="background:${b};color:${f};${i===0?'outline:2px solid #E6E6E6;outline-offset:2px':''}">${n}</div>`).join('')}</div>
+<div class="lbl">TURN / 翻页</div><div class="seg"><span>滚动</span><span class="on">段落接续</span><span>纸页</span><span>仿真</span></div>
+<div style="display:flex;justify-content:space-between;margin-top:16px;font-size:15px;color:var(--sub)"><span>更多排版、屏幕与手势</span><span>›</span></div>`);
+const aaC=base+sheet(`<div class="sh-t">外观<span class="x">✕</span></div><div class="seg" style="margin-top:14px"><span class="on">字体</span><span>段落</span><span>主题</span><span>翻页</span><span>屏幕</span></div>
+<div class="lbl">FONT / 字体</div><div style="display:flex;flex-direction:column;gap:8px">${['苹方 · 系统','宋体 · 系统','霞鹜文楷 · 已导入','楷体 · Apple 可下载'].map((f,i)=>`<div style="display:flex;justify-content:space-between;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,${i===2?.14:.06});font-size:15px"><span>${f}</span><span style="color:var(--sub)">${i===2?'✓':''}</span></div>`).join('')}</div>
+<div class="lbl">SIZE / 字号</div><div style="display:flex;align-items:center;gap:14px"><span style="font-size:13px">A</span>${slider(55)}<span style="font-size:20px">A</span></div>`);
+document.getElementById('aa').innerHTML=[['A','Four tiles (old style)',aaA],['B','Controls inline (+ More)',aaB],['C','Tabs',aaC]].map(([k,n,h])=>`<div class="opt"><div class="tag">${k}<span>${n}</span></div><div class="phone">${h}</div></div>`).join('');
+
+const infoA=`${status}${header}${body()}${footer}<div class="home"></div>`;
+const infoB=`${status}<div style="height:22px"></div>${body()}<div style="position:absolute;bottom:30px;left:28px;right:28px;display:flex;justify-content:space-between;font-size:12px;color:var(--sub)" class="mono"><span style="font-family:'Microsoft YaHei UI';letter-spacing:0">第一章 桃花源</span><span>3 / 9 · 9:41 · 82%</span></div><div class="home"></div>`;
+const infoC=`${status}<div style="height:22px"></div>${body()}<div style="position:absolute;bottom:24px;left:28px;right:28px;height:2px;background:rgba(255,255,255,.1)"><i style="display:block;width:8%;height:2px;background:var(--ink)"></i></div><div class="home" style="opacity:.4"></div>`;
+document.getElementById('info').innerHTML=[['A','Header + footer (old)',infoA],['B','Footer only',infoB],['C','Hairline only',infoC]].map(([k,n,h])=>`<div class="opt"><div class="tag">${k}<span>${n}</span></div><div class="phone">${h}</div></div>`).join('');
+</script>
+</body>
+</html>
