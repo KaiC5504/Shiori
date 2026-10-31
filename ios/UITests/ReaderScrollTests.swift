@@ -98,6 +98,31 @@ final class ReaderScrollTests: XCTestCase {
                                  "left at \(far.label), reopened at \(reopened.label)")
     }
 
+    func testLargerTextKeepsThePlace() {
+        for _ in 0..<4 { app.swipeUp(velocity: .fast) }
+        settle()
+        let before = top()
+
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.45)).tap()
+        let appearance = app.buttons["chrome.appearance"]
+        XCTAssertTrue(appearance.waitForExistence(timeout: 5), "the chrome never showed")
+        appearance.tap()
+        let larger = app.buttons["aa.larger"]
+        XCTAssertTrue(larger.waitForExistence(timeout: 5), "the Aa sheet never opened")
+        for _ in 0..<3 {
+            larger.tap()
+            Thread.sleep(forTimeInterval: 0.4)
+        }
+        settle()
+        let after = top()
+        // Same tolerance as reopening: the held paragraph is the one at the top edge.
+        XCTAssertEqual(after.place.chapter, before.place.chapter, "was at \(before.label), now \(after.label)")
+        XCTAssertLessThanOrEqual(after.place, before.place, "moved ahead: \(after.label), was at \(before.label)")
+        XCTAssertLessThanOrEqual(before.place.paragraph - after.place.paragraph, 1,
+                                 "was at \(before.label), now \(after.label)")
+        assertStill(after)
+    }
+
     private struct Place: Comparable {
         var chapter: Int
         var paragraph: Int

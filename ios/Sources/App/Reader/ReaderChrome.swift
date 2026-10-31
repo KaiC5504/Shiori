@@ -127,6 +127,7 @@ struct ReaderChrome: View {
                     .buttonStyle(ChromeToolStyle(icon: .contents))
                 Button(action: onAppearance) { Text("Appearance") }
                     .buttonStyle(ChromeToolStyle(icon: .typography))
+                    .accessibilityIdentifier("chrome.appearance")
                 Button(action: onDayNight) { isNight ? Text("Day") : Text("Night") }
                     .buttonStyle(ChromeToolStyle(icon: isNight ? .sun : .moon))
             }

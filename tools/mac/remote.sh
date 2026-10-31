@@ -42,9 +42,12 @@ libtests() {
   done
 }
 
+# `uitests=testName` runs one ReaderScrollTests case.
 uitests() {
+  local only=()
+  [ -n "${1:-}" ] && only=(-only-testing:"ShioriUITests/ReaderScrollTests/$1")
   xcodebuild test -project ios/Shiori.xcodeproj -scheme ShioriUITests -destination "id=$UDID" \
-    -derivedDataPath ~/dd "${SIGN[@]}" > ~/logs/uitests.log 2>&1 || status=1
+    -derivedDataPath ~/dd "${SIGN[@]}" ${only[@]+"${only[@]}"} > ~/logs/uitests.log 2>&1 || status=1
   grep -E "Test Case .*(passed|failed)|error: -\[|\*\* TEST" ~/logs/uitests.log | sed -E 's/^.*\[ShioriUITests\.//' | cut -c1-200
 }
 
@@ -54,6 +57,7 @@ for step in "$@"; do
     shots) shots ;;
     libtests) libtests ;;
     uitests) uitests ;;
+    uitests=*) uitests "${step#uitests=}" ;;
     all) build || exit 1; shots; libtests; uitests ;;
     *) echo "unknown step: $step"; exit 2 ;;
   esac
