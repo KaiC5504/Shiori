@@ -27,7 +27,9 @@ struct SpineShelf: View {
         let ring = ShelfRing(books)
         let current = ring.item(at: crest ?? ring.home)
         VStack(alignment: .leading, spacing: 6) {
-            if width > 0 {
+            if width > 0, ring.slotCount == 1, let current {
+                single(current, ShelfMetrics(width: width, reduced: reduced))
+            } else if width > 0 {
                 row(ring, ShelfMetrics(width: width, reduced: reduced), current: current)
             } else {
                 Color.clear.frame(height: ShelfMetrics(width: 390, reduced: reduced).stageHeight)
@@ -42,6 +44,21 @@ struct SpineShelf: View {
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
         .onChange(of: ring.ids) { crest = ring.home }
         .shioriHaptic(.selection, trigger: ticks)
+    }
+
+    /// One book stands alone at the centre, facing out.
+    private func single(_ item: BookListItem, _ metrics: ShelfMetrics) -> some View {
+        SpineBook(item: item, number: 1, marked: item.progress != nil, metrics: metrics, pinned: true)
+            .staggeredReveal(settled ? 0 : 2)
+            .frame(maxWidth: .infinity)
+            .frame(height: metrics.stageHeight)
+            .background { ShelfBoard(metrics: metrics) }
+            .contentShape(Rectangle())
+            .onTapGesture { open(item) }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text("3D shelf"))
+            .accessibilityValue(Text(verbatim: item.book.title))
+            .accessibilityAction { open(item) }
     }
 
     private func row(_ ring: ShelfRing, _ metrics: ShelfMetrics, current: BookListItem?) -> some View {

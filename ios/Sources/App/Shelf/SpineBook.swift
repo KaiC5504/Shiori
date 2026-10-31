@@ -11,6 +11,8 @@ struct SpineBook: View {
     let number: Int
     let marked: Bool
     let metrics: ShelfMetrics
+    /// Always posed as the crest, for a shelf of one book that has no row to scroll.
+    let pinned: Bool
 
     @Environment(AppModel.self) private var model
     @Environment(\.displayScale) private var displayScale
@@ -18,8 +20,9 @@ struct SpineBook: View {
     @State private var image: UIImage?
     @State private var palette: BookPalette
 
-    init(item: BookListItem, number: Int, marked: Bool, metrics: ShelfMetrics) {
+    init(item: BookListItem, number: Int, marked: Bool, metrics: ShelfMetrics, pinned: Bool = false) {
         self.item = item
+        self.pinned = pinned
         self.number = number
         self.marked = marked
         self.metrics = metrics
@@ -65,11 +68,12 @@ struct SpineBook: View {
     private func face<Content: View>(_ face: BookFace, _ block: BookBlock,
                                      @ViewBuilder content: () -> Content) -> some View {
         let metrics = metrics
+        let pinned = pinned
         return content()
             .frame(width: metrics.pitch, height: metrics.stageHeight, alignment: .topLeading)
             .visualEffect { effect, proxy in
                 let row = NamedCoordinateSpace.scrollView(axis: .horizontal)
-                let offset = proxy.bounds(of: row).map { proxy.size.width / 2 - $0.midX }
+                let offset = pinned ? 0 : proxy.bounds(of: row).map { proxy.size.width / 2 - $0.midX }
                     ?? proxy.frame(in: row).midX - metrics.viewport / 2
                 let pose = BookPose(offset: offset, block: block, metrics: metrics)
                 return effect
