@@ -73,6 +73,7 @@ struct BookDetailView: View {
                                              reversed: reversed) { index in
                                 open(book, at: index)
                             }
+                            .currentLabel("Last read")
                         }
                         .staggeredReveal(6)
                     }
