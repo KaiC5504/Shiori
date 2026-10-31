@@ -71,7 +71,8 @@ minimum is iOS 26.
 ## Building and shipping
 
 iOS app, developed on Windows with no Mac. GitHub Actions does everything:
-`ios-compile.yml` compiles and screenshots on every push, and `testflight.yml` signs and
+`ios-compile.yml` compiles on every push (dispatch it with `full=true` to also run the
+library tests, screenshots and reader UI tests there), and `testflight.yml` signs and
 uploads when `scripts/testflight.py start` dispatches it. The full playbook, including
 every manual step and known failures, is the global `ios-testflight` skill. Load it
 before touching signing, `testflight.yml`, `ios/project.yml` or the compile workflow.
@@ -96,9 +97,11 @@ Reader" was taken; the home-screen name is still "Shiori"), Apple ID `6829180488
 
 1. Commit on `dev`. Then ship:
    `git checkout main && git merge --ff-only dev && git push origin main && git checkout dev`.
-2. Wait for the compile check (`gh run list --branch main --limit 1`, then
-   `gh run watch <id> --exit-status`), and look at the `simulator-screenshots` artifact
-   for every screen you touched.
+2. Before shipping, `bash tools/mac/run.sh all` on the rented Mac and look at the shots
+   for every screen you touched. Without a Mac, dispatch the compile check with
+   `full=true` and read its `simulator-screenshots` artifact instead. Then wait for the
+   push's compile check (`gh run list --branch main --limit 1`, then
+   `gh run watch <id> --exit-status`).
 3. At the end of a milestone, with `main` green:
    `python scripts/testflight.py start`, then `python scripts/testflight.py watch <id>` in
    the background. Green means Apple has processed the build. After any change to

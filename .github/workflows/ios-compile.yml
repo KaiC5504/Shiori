@@ -1,7 +1,11 @@
 name: iOS compile check
 
-# Unsigned simulator build, launch, screenshots. Needs no Apple account.
-# The signed device build lives in testflight.yml.
+# Unsigned simulator build. Needs no Apple account. The signed device build lives in
+# testflight.yml.
+#
+# A push only compiles: while a Mac is rented, tools/mac/run.sh is the test gate (library
+# tests, screenshots, reader UI tests) in minutes instead of GitHub's 50. Without a Mac,
+# dispatch this with full=true to run all of it here.
 
 # GitHub only has main; work branches stay local and are checked with tools/check-app.sh.
 on:
@@ -12,6 +16,11 @@ on:
       - ".github/workflows/ios-compile.yml"
       - "tools/shots.sh"
   workflow_dispatch:
+    inputs:
+      full:
+        description: "Also run the library tests, screenshots and reader UI tests"
+        type: boolean
+        default: false
 
 concurrency:
   group: ios-compile-${{ github.ref }}
@@ -36,6 +45,7 @@ jobs:
 
       # GRDB, ZIP, decoding and the importer: these run nowhere but here.
       - name: ShioriLibrary tests
+        if: inputs.full
         run: swift test --package-path ios/Packages/ShioriLibrary
 
       - name: Install XcodeGen
@@ -50,6 +60,7 @@ jobs:
       # needed. A fallback keeps the check running, but never on a two-display device such
       # as "iPhone Duo", which `simctl io screenshot` refuses.
       - name: Boot a simulator
+        if: inputs.full
         id: sim
         run: |
           read -r UDID NAME_OK NAME <<<"$(python3 -c "
@@ -100,7 +111,7 @@ jobs:
           xcodebuild \
             -project ios/Shiori.xcodeproj \
             -scheme Shiori \
-            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -destination "${{ inputs.full && format('id={0}', steps.sim.outputs.udid) || 'generic/platform=iOS Simulator' }}" \
             -configuration Debug \
             -derivedDataPath build \
             CODE_SIGN_IDENTITY="-" \
@@ -111,6 +122,7 @@ jobs:
       # Compiling only proves it parses. Launching proves the first screen does not
       # crash, and the screenshots are the only look at the UI before TestFlight.
       - name: Install, launch and screenshot
+        if: inputs.full
         run: |
           xcrun simctl install "${{ steps.sim.outputs.udid }}" build/Build/Products/Debug-iphonesimulator/Shiori.app
           # The shot list lives in tools/shots.sh so the Mac loop takes the same screenshots.
@@ -120,6 +132,7 @@ jobs:
       # drags across chapter boundaries, checking the text never moves by itself. Screenshots
       # can't catch that, and it is what KaiC's phone test found.
       - name: Reader UI tests
+        if: inputs.full
         run: |
           status=0
           xcodebuild test \
@@ -135,7 +148,7 @@ jobs:
           exit $status
 
       - name: Collect crash reports
-        if: always()
+        if: always() && inputs.full
         run: |
           mkdir -p shots/crashes
           find ~/Library/Logs/DiagnosticReports -name "Shiori*" -exec cp {} shots/crashes/ \; 2>/dev/null || true
@@ -146,7 +159,7 @@ jobs:
           fi
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: always()
+        if: always() && inputs.full
         with:
           name: simulator-screenshots
           path: shots/
