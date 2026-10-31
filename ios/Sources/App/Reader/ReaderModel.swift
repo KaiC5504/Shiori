@@ -23,11 +23,15 @@ struct ReaderRow: Identifiable, Equatable, Sendable {
 
     let id: ParagraphAnchor
     let kind: Kind
+    /// The gap between chapters hangs below a chapter's last row rather than above the next
+    /// title, so a chapter scrolled to the top starts right under the safe area.
+    let endsChapter: Bool
 
     static func rows(chapter: Int, title: String, content: ChapterContent?) -> [ReaderRow] {
         let first = ParagraphAnchor(chapter: chapter, block: 0)
-        guard let content else { return [ReaderRow(id: first, kind: .unreadable(title: title))] }
-        guard !content.blocks.isEmpty else { return [ReaderRow(id: first, kind: .empty)] }
+        guard let content else { return [ReaderRow(id: first, kind: .unreadable(title: title), endsChapter: true)] }
+        guard !content.blocks.isEmpty else { return [ReaderRow(id: first, kind: .empty, endsChapter: true)] }
+        let last = content.blocks.count - 1
         return content.blocks.enumerated().map { index, block in
             let kind: Kind
             switch block {
@@ -35,7 +39,8 @@ struct ReaderRow: Identifiable, Equatable, Sendable {
             case .paragraph(let text): kind = .paragraph(text)
             case .image: kind = .image
             }
-            return ReaderRow(id: ParagraphAnchor(chapter: chapter, block: index), kind: kind)
+            return ReaderRow(id: ParagraphAnchor(chapter: chapter, block: index), kind: kind,
+                             endsChapter: index == last)
         }
     }
 }
@@ -76,7 +81,12 @@ final class ReaderModel {
     @ObservationIgnored private var displayed: ClosedRange<Int>?
     @ObservationIgnored private var isReady = false
     @ObservationIgnored private var isJumping = false
+    @ObservationIgnored private var jumpGeneration = 0
+    @ObservationIgnored private var rowsStale = false
+    @ObservationIgnored private var lastVisible: ParagraphAnchor?
     @ObservationIgnored private var pending: ShioriLibrary.Progress?
+    /// The position last written or restored; saving the same place again would only bump
+    /// `updatedAt` and reorder the shelf.
     @ObservationIgnored private var lastSaved: ShioriLibrary.Progress?
     @ObservationIgnored private var saveTask: Task<Void, Never>?
 
@@ -88,7 +98,6 @@ final class ReaderModel {
         chapters = opened.chapters
         source = opened.source
         saved = opened.saved
-        lastSaved = opened.saved
         let start = opened.saved.map { ReadingPosition.chapterIndex(for: $0, in: opened.chapters) } ?? 0
         initialAnchor = ParagraphAnchor(chapter: start, block: 0)
         currentChapter = start
@@ -113,21 +122,30 @@ final class ReaderModel {
         if let saved, let content = await content(for: chapter) {
             initialAnchor.block = ReadingPosition.block(for: saved, in: content)
         }
+        // Nil when the chapter failed to load, so nothing is saved until the reader reaches
+        // text that did, and the old position survives.
         pending = progress(at: initialAnchor)
+        lastSaved = pending
         isReady = true
     }
 
     /// Loads the whole window around `chapter` before swapping the rows, so a jump or the
-    /// first screen lands in one step instead of chapters arriving above the text.
-    func show(chapter: Int) async {
-        guard chapters.indices.contains(chapter) else { return }
+    /// first screen lands in one step instead of chapters arriving above the text. Returns
+    /// false when a later jump has overtaken this one, which then owns the rows.
+    @discardableResult
+    func show(chapter: Int) async -> Bool {
+        guard chapters.indices.contains(chapter) else { return false }
+        jumpGeneration += 1
+        let generation = jumpGeneration
         isJumping = true
         currentChapter = chapter
         trimToWindow()
-        let loads = windowByDistance.map { index in Task { await load(index) } }
+        let loads = windowByDistance.map { index in Task { await load(index, retryingFailure: true) } }
         for pendingLoad in loads { _ = await pendingLoad.value }
+        guard generation == jumpGeneration else { return false }
         isJumping = false
         rebuildRows()
+        return true
     }
 
     func content(for chapter: Int) async -> ChapterContent? {
@@ -135,8 +153,10 @@ final class ReaderModel {
         return await load(chapter).content
     }
 
+    /// Fed by both the scroll position and scroll-target visibility, so repeats are dropped.
     func visibleAnchorChanged(_ anchor: ParagraphAnchor) {
-        guard isReady, !isJumping, chapters.indices.contains(anchor.chapter) else { return }
+        guard isReady, !isJumping, chapters.indices.contains(anchor.chapter), anchor != lastVisible else { return }
+        lastVisible = anchor
         pending = progress(at: anchor) ?? pending
         if anchor.chapter != currentChapter {
             currentChapter = anchor.chapter
@@ -148,21 +168,13 @@ final class ReaderModel {
         saveTask = Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(500))
             guard !Task.isCancelled else { return }
-            self?.save(onlyIfMoved: true)
+            self?.saveNow()
         }
     }
 
     func saveNow() {
-        save(onlyIfMoved: false)
-    }
-
-    private func save(onlyIfMoved: Bool) {
         saveTask?.cancel()
-        guard var progress = pending else { return }
-        if onlyIfMoved, let lastSaved, lastSaved.chapterIndex == progress.chapterIndex,
-           lastSaved.offset == progress.offset {
-            return
-        }
+        guard var progress = pending, !Self.samePlace(progress, lastSaved) else { return }
         progress.updatedAt = .now
         do {
             try database.save(progress)
@@ -172,11 +184,19 @@ final class ReaderModel {
         }
     }
 
+    private static func samePlace(_ a: ShioriLibrary.Progress, _ b: ShioriLibrary.Progress?) -> Bool {
+        guard let b else { return false }
+        return a.chapterIndex == b.chapterIndex && a.keyTitle == b.keyTitle
+            && a.keyOccurrence == b.keyOccurrence && a.offset == b.offset
+    }
+
+    /// Nil inside a chapter that failed to load: its offsets mean nothing.
     private func progress(at anchor: ParagraphAnchor) -> ShioriLibrary.Progress? {
-        guard chapters.indices.contains(anchor.chapter), let entry = loaded[anchor.chapter] else { return nil }
+        guard chapters.indices.contains(anchor.chapter), let content = loaded[anchor.chapter]?.content else {
+            return nil
+        }
         return ReadingPosition.progress(bookId: book.id, chapter: chapters[anchor.chapter],
-                                        chapterCount: chapters.count,
-                                        content: entry.content ?? ChapterContent(blocks: []),
+                                        chapterCount: chapters.count, content: content,
                                         block: anchor.block, now: .now)
     }
 
@@ -195,21 +215,25 @@ final class ReaderModel {
     }
 
     private func fillWindow() {
-        for index in windowByDistance where loaded[index] == nil && inFlight[index] == nil {
+        for index in windowByDistance where loaded[index]?.content == nil && inFlight[index] == nil {
             Task {
-                _ = await load(index)
+                _ = await load(index, retryingFailure: true)
                 rebuildRows()
             }
         }
     }
 
-    private func load(_ index: Int) async -> LoadedChapter {
-        if let done = loaded[index] { return done }
+    /// A failed chapter stays cached so its row can show, but `retryingFailure` reads it again.
+    private func load(_ index: Int, retryingFailure: Bool = false) async -> LoadedChapter {
+        if let done = loaded[index], done.content != nil || !retryingFailure { return done }
         let task = inFlight[index] ?? startLoading(index)
         let result = await task.value
         inFlight[index] = nil
         // A chapter the reader scrolled away from while it parsed would only be evicted again.
-        if window.contains(index) { loaded[index] = result }
+        if window.contains(index) {
+            if let old = loaded[index], old.rows != result.rows { rowsStale = true }
+            loaded[index] = result
+        }
         return result
     }
 
@@ -243,8 +267,9 @@ final class ReaderModel {
             while high < window.upperBound, loaded[high + 1] != nil { high += 1 }
             range = low...high
         }
-        guard range != displayed else { return }
+        guard range != displayed || rowsStale else { return }
         displayed = range
+        rowsStale = false
         rows = range.map { run in run.flatMap { loaded[$0]?.rows ?? [] } } ?? []
     }
 }

@@ -38,7 +38,11 @@ struct ContentsSheet: View {
                 }
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
-                .onAppear { proxy.scrollTo(current, anchor: .center) }
+                .task {
+                    // A List in a sheet can drop a scroll asked for before its first layout.
+                    await Task.yield()
+                    proxy.scrollTo(current, anchor: .center)
+                }
             }
         }
         .background(Tokens.surface)

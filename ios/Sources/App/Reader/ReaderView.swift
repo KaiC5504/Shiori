@@ -69,12 +69,18 @@ struct ReaderView: View {
         .onChange(of: position.viewID(type: ParagraphAnchor.self)) { _, anchor in
             if let anchor { reader.visibleAnchorChanged(anchor) }
         }
+        // A second, independent signal, in case `viewID` isn't updated by user scrolls.
+        .onScrollTargetVisibilityChange(idType: ParagraphAnchor.self, threshold: 0.1) { visible in
+            let top = visible.min { ($0.chapter, $0.block) < ($1.chapter, $1.block) }
+            if let top { reader.visibleAnchorChanged(top) }
+        }
         .onScrollPhaseChange { _, phase in
             if phase == .interacting, showsBar { setBar(false) }
         }
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { viewport = $0 }
         .onTapGesture(coordinateSpace: .global) { location in tap(at: location) }
         .accessibilityAction(.magicTap) { setBar(!showsBar) }
+        .accessibilityAction(named: Text("Contents")) { showsContents = true }
         .accessibilityAction(.escape) { close() }
     }
 
@@ -134,8 +140,9 @@ struct ReaderView: View {
     private func jump(to chapter: Int) {
         guard let reader else { return }
         Task {
-            await reader.show(chapter: chapter)
-            position.scrollTo(id: ParagraphAnchor(chapter: chapter, block: 0), anchor: .top)
+            if await reader.show(chapter: chapter) {
+                position.scrollTo(id: ParagraphAnchor(chapter: chapter, block: 0), anchor: .top)
+            }
         }
     }
 
@@ -172,7 +179,6 @@ private struct ReaderColumn: View {
         }
         .scrollTargetLayout()
         .padding(.horizontal, 24)
-        .padding(.top, 8)
         .padding(.bottom, 64)
     }
 }
@@ -181,6 +187,12 @@ private struct ReaderRowView: View {
     let row: ReaderRow
 
     var body: some View {
+        content
+            .padding(.bottom, row.endsChapter ? 32 : 0)
+    }
+
+    @ViewBuilder
+    private var content: some View {
         switch row.kind {
         case .title(let text):
             title(text)
@@ -228,7 +240,7 @@ private struct ReaderRowView: View {
             .lineSpacing(6)
             .foregroundStyle(Tokens.ink)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 40)
+            .padding(.top, 8)
             .padding(.bottom, 24)
             .accessibilityAddTraits(.isHeader)
     }
