@@ -86,9 +86,10 @@ final class ReaderTapTests: XCTestCase {
         return shown(file: file, line: line) { frame in frame.maxY > safeTop } better: { $0.minY < $1.minY }
     }
 
-    /// The bottommost text that starts above the home indicator.
+    /// The bottommost text that starts above the info footer, whose chapter name would
+    /// otherwise read as that chapter's title.
     private func bottom(file: StaticString = #filePath, line: UInt = #line) -> Shown {
-        let floor = app.windows.firstMatch.frame.maxY - 20
+        let floor = app.windows.firstMatch.frame.maxY - 50
         return shown(file: file, line: line) { frame in frame.minY < floor } better: { $0.minY > $1.minY }
     }
 
