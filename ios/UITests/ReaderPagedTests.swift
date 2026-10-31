@@ -61,7 +61,8 @@ final class ReaderPagedTests: XCTestCase {
         XCTAssertTrue(marker.waitForExistence(timeout: 5), "\(before.first) isn't in the scroll")
         let window = app.windows.firstMatch.frame
         XCTAssertGreaterThanOrEqual(marker.frame.minY, window.minY, "\(before.first) is above the screen")
-        XCTAssertLessThan(marker.frame.minY, window.midY, "\(before.first) isn't near the top")
+        XCTAssertLessThan(marker.frame.minY, window.midY,
+                          "\(before.first) isn't near the top; the scroll shows \(shownMarkers()), the page started “\(before.text.prefix(16))”")
 
         // And back: the page holds the paragraph the scroll had at the top.
         let relay = app.buttons["aa.turn.relay"]
@@ -91,6 +92,15 @@ final class ReaderPagedTests: XCTestCase {
         let reopened = page()
         XCTAssertEqual(reopened.first, left.first, "left at \(left.first), reopened at \(reopened.first)")
         XCTAssertEqual(reopened.text, left.text, "reopened on another page around \(left.first)")
+    }
+
+    /// The scroll's paragraphs on screen, top first, with their tops.
+    private func shownMarkers() -> String {
+        app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "〔")).allElementsBoundByIndex
+            .filter { $0.isHittable }
+            .prefix(4)
+            .map { "\(String($0.label.prefix(11)))@\(Int($0.frame.minY))" }
+            .joined(separator: ", ")
     }
 
     private var pages: XCUIElementQuery {
