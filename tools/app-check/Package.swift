@@ -7,9 +7,13 @@ import PackageDescription
 let package = Package(
     name: "ShioriCheck",
     platforms: [.iOS("26.0")],
+    dependencies: [
+        .package(path: "ShioriCore"),
+    ],
     targets: [
         .target(
             name: "Shiori",
+            dependencies: [.product(name: "ShioriCore", package: "ShioriCore")],
             path: "App"
         ),
     ],

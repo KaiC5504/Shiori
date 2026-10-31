@@ -28,9 +28,9 @@ settings:
 
 # Pure-Swift logic goes in local packages: ShioriCore is the only code `swift test` can
 # run on Windows. Both folders sit under ios/, which the Actions `paths:` filter covers.
-# packages:
-#   ShioriCore:
-#     path: Packages/ShioriCore
+packages:
+  ShioriCore:
+    path: Packages/ShioriCore
 #   ShioriLibrary:
 #     path: Packages/ShioriLibrary
 
@@ -40,8 +40,8 @@ targets:
     platform: iOS
     sources:
       - path: Sources/App
-    # dependencies:
-    #   - package: ShioriCore
+    dependencies:
+      - package: ShioriCore
     #   - package: ShioriLibrary
     settings:
       base:

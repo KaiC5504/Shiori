@@ -28,6 +28,11 @@ jobs:
           xcodebuild -version
           xcodebuild -showsdks | grep -i iphone || true
 
+      # Also run on Windows, but Apple's Foundation differs from swift-corelibs in places
+      # (XMLParser, string encodings), so CI runs them again.
+      - name: ShioriCore tests
+        run: swift test --package-path ios/Packages/ShioriCore
+
       - name: Install XcodeGen
         run: brew install xcodegen
 
