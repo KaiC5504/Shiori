@@ -51,7 +51,9 @@ struct ReaderView: View {
                 }
                 veil(theme.paper)
                 if preferences.showsInfoFooter { footer(reader) }
-                BrightnessEdge(preferences: preferences) { tap(at: $0) }
+                BrightnessEdge(preferences: preferences, onTap: { tap(at: $0) }, onSwipe: { forward in
+                    if shownLayout == .paged, !showsChrome, sheet == nil { step(forward: forward) }
+                })
             } else if openFailed {
                 failure(theme)
             } else {

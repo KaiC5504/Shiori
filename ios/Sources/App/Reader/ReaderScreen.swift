@@ -56,10 +56,15 @@ enum ReaderScreen {
 struct BrightnessEdge: View {
     let preferences: ReaderPreferences
     let onTap: (CGPoint) -> Void
+    /// A sideways swipe that starts on the strip, which would otherwise never reach the paged
+    /// view under it. True means forward (a swipe to the left).
+    var onSwipe: (Bool) -> Void = { _ in }
 
     @Environment(\.motionReduced) private var reduced
     /// The level the drag started from; non-nil while dragging.
     @State private var start: Double?
+    /// Set once a drag turns out to run sideways: then it's a swipe, not brightness.
+    @State private var sideways = false
     @State private var height: CGFloat = 1
     @State private var limits = 0
 
@@ -90,6 +95,10 @@ struct BrightnessEdge: View {
     private var drag: some Gesture {
         DragGesture(minimumDistance: 6)
             .onChanged { value in
+                if start == nil, !sideways, abs(value.translation.width) > abs(value.translation.height) {
+                    sideways = true
+                }
+                guard !sideways else { return }
                 if start == nil {
                     withAnimation(Motion.animation(Motion.reveal, reduced: reduced)) {
                         start = ReaderScreen.level(preferences)
@@ -103,7 +112,9 @@ struct BrightnessEdge: View {
                 if level == 0 || level == 1 { limits += 1 }
                 preferences.brightness = level
             }
-            .onEnded { _ in
+            .onEnded { value in
+                if sideways, abs(value.translation.width) > 30 { onSwipe(value.translation.width < 0) }
+                sideways = false
                 withAnimation(Motion.animation(Motion.reveal, reduced: reduced)) { start = nil }
             }
     }
