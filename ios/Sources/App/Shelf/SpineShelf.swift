@@ -101,6 +101,9 @@ struct SpineShelf: View {
         .accessibilityAction {
             if let current { open(current) }
         }
+        // A changed list keeps the same slot ids, so re-setting the crest to the same home slot
+        // wouldn't move the row; a fresh row centres on it the way the first launch does.
+        .id(ring.ids)
     }
 
     // The books are drawn well away from their slots' layout frames (the crest spans several),

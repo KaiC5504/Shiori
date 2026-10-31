@@ -144,8 +144,8 @@ private struct SpineFace: View {
     }
 }
 
-/// The front cover: an archive board with the shelf number, the cover art (or the title set in
-/// type when the book has none) and the serial.
+/// The front cover: the book's own art edge to edge, or, when it has none, an archive board with
+/// the shelf number, the title set in type and the serial.
 private struct CoverFace: View {
     let book: Book
     let image: UIImage?
@@ -155,36 +155,51 @@ private struct CoverFace: View {
 
     var body: some View {
         let w = block.depth, h = block.height
+        Group {
+            if let image {
+                // A real cover fills the whole board, edge to edge.
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: w, height: h)
+                    .clipped()
+                    .transition(.opacity)
+            } else {
+                drawn(w: w, h: h)
+            }
+        }
+        .frame(width: w, height: h, alignment: .topLeading)
+        .background(palette.board)
+        // The hinge, a groove beside the spine.
+        .overlay(alignment: .leading) {
+            palette.shade.opacity(0.3)
+                .frame(width: max(1, w * 0.02))
+                .padding(.leading, w * 0.035)
+        }
+    }
+
+    /// Shiori's own cover for a book without one: number, title, author and serial.
+    private func drawn(w: CGFloat, h: CGFloat) -> some View {
         let inset = (w * 0.08).rounded()
         let code = Font.system(size: max(6, w * 0.058), weight: .medium, design: .monospaced)
-        VStack(alignment: .leading, spacing: 0) {
+        return VStack(alignment: .leading, spacing: 0) {
             Text(verbatim: String(format: "NO.%03ld", number))
                 .font(code)
                 .tracking(1)
                 .opacity(0.75)
                 .frame(height: h * 0.1, alignment: .bottomLeading)
-            if let image {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: w - inset * 2, height: h * 0.76)
-                    .clipped()
-                    .padding(.top, h * 0.025)
-                    .transition(.opacity)
-            } else {
-                Rectangle()
-                    .fill(palette.ink.opacity(0.35))
-                    .frame(height: 0.75)
-                    .padding(.top, h * 0.03)
-                Text(verbatim: book.title)
-                    .font(.system(size: w * 0.13, weight: .bold))
-                    .lineLimit(5)
-                    .minimumScaleFactor(0.75)
-                    .padding(.top, h * 0.05)
-            }
+            Rectangle()
+                .fill(palette.ink.opacity(0.35))
+                .frame(height: 0.75)
+                .padding(.top, h * 0.03)
+            Text(verbatim: book.title)
+                .font(.system(size: w * 0.13, weight: .bold))
+                .lineLimit(5)
+                .minimumScaleFactor(0.75)
+                .padding(.top, h * 0.05)
             Spacer(minLength: 0)
             HStack(alignment: .lastTextBaseline, spacing: 4) {
-                if image == nil, let author = book.author, !author.isEmpty {
+                if let author = book.author, !author.isEmpty {
                     Text(verbatim: author)
                         .font(.system(size: w * 0.072, weight: .medium))
                         .lineLimit(1)
@@ -201,14 +216,6 @@ private struct CoverFace: View {
         .foregroundStyle(palette.ink)
         .padding(.horizontal, inset)
         .padding(.bottom, h * 0.04)
-        .frame(width: w, height: h, alignment: .topLeading)
-        .background(palette.board)
-        // The hinge, a groove beside the spine.
-        .overlay(alignment: .leading) {
-            palette.shade.opacity(0.3)
-                .frame(width: max(1, w * 0.02))
-                .padding(.leading, w * 0.035)
-        }
     }
 }
 
