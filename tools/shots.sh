@@ -41,6 +41,8 @@ shoot 16-app-icon 8 -DemoTab settings -DemoSettingsPage appIcon
 shoot 12-import-folder 12 -DemoTab imports -DemoWatchedFolder YES -DemoImportResults YES
 shoot 13-reader-chrome 12 -DemoTab shelf -DemoReader 1 -DemoChrome YES
 shoot 14-appearance 12 -DemoTab shelf -DemoReader 1 -DemoAppearance YES
+shoot 14b-appearance-more 12 -DemoTab shelf -DemoReader 1 -DemoAppearance YES -DemoAppearancePage more
+shoot 14c-appearance-fonts 12 -DemoTab shelf -DemoReader 1 -DemoAppearance YES -DemoAppearancePage fonts
 shoot 15-reader-parchment 12 -DemoTab shelf -DemoReader 1 -DemoTheme parchment
 
 xcrun simctl ui "$UDID" appearance dark
