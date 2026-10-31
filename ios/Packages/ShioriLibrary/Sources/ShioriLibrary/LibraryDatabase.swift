@@ -127,6 +127,16 @@ public final class LibraryDatabase: Sendable {
         }
     }
 
+    /// `addedChapters` nil means the text changed without new chapters.
+    public func markUpdated(bookId: UUID, addedChapters: Int?, at date: Date) throws {
+        try queue.write { db in
+            guard var book = try Book.fetchOne(db, key: bookId) else { return }
+            book.lastUpdatedAt = date
+            book.lastUpdateAddedChapters = addedChapters
+            try book.update(db)
+        }
+    }
+
     /// Calls `onChange` on the main queue with the current list, then after every change.
     /// Call it on the main thread: the first list arrives before it returns, so the shelf never flashes empty.
     public func observeBookList(_ onChange: @escaping @Sendable ([BookListItem]) -> Void) -> AnyDatabaseCancellable {
