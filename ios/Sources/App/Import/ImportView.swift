@@ -46,7 +46,7 @@ struct ImportView: View {
                 .font(.headline)
                 .foregroundStyle(Tokens.paper)
                 .frame(maxWidth: .infinity, minHeight: 56)
-                .background(Tokens.ink, in: Capsule())
+                .background(Tokens.ink, in: RoundedRectangle(cornerRadius: 8))
             }
             .buttonStyle(InkButtonStyle())
             .disabled(isBusy)
@@ -82,9 +82,19 @@ struct ImportView: View {
         }
     }
 
-    // A picker error carries no file to report, and cancelling can land here too.
     private func picked(_ result: Result<[URL], Error>) {
-        guard case .success(let urls) = result, !urls.isEmpty else { return }
+        let urls: [URL]
+        switch result {
+        case .success(let picked):
+            urls = picked
+        case .failure(let error):
+            if (error as? CocoaError)?.code != .userCancelled {
+                model.recentImports.insert(.failed(fileName: "", reason: .unreadable(error.localizedDescription)),
+                                           at: 0)
+            }
+            return
+        }
+        guard !urls.isEmpty else { return }
         isCopying = true
         Task {
             let batch = await ImportInbox.copy(urls)

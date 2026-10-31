@@ -1,4 +1,5 @@
 import Foundation
+import os
 import ShioriLibrary
 
 /// Copies picked files into the temporary folder, each in its own UUID folder under its
@@ -11,8 +12,17 @@ enum ImportInbox {
         var folders: [URL] = []
     }
 
-    private static var root: URL {
+    static var root: URL {
         FileManager.default.temporaryDirectory.appending(path: "ImportInbox", directoryHint: .isDirectory)
+    }
+
+    private static let log = Logger(subsystem: "com.kaichuan.shiori", category: "import")
+
+    /// A kill mid-import leaves full copies of books here, so launch clears the lot.
+    static func clear() async {
+        await Task.detached(priority: .utility) {
+            try? FileManager.default.removeItem(at: root)
+        }.value
     }
 
     // The coordinated read blocks until iCloud has downloaded the file, which can take a
@@ -42,6 +52,9 @@ enum ImportInbox {
                 batch.folders.append(folder)
             } catch {
                 try? FileManager.default.removeItem(at: folder)
+                // The domain and code are enough to diagnose; the description can carry the file name.
+                let nsError = error as NSError
+                log.error("copy of .\(url.pathExtension, privacy: .public) failed: \(nsError.domain, privacy: .public) \(nsError.code, privacy: .public)")
                 batch.failures.append(.failed(fileName: url.lastPathComponent,
                                               reason: .unreadable(error.localizedDescription)))
             }
