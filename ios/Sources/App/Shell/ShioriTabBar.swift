@@ -4,12 +4,12 @@ import SwiftUI
 /// to a tapped lane, or follows a finger dragged along the bar and settles on the nearest lane.
 struct ShioriTabBar: View {
     @Binding var selection: AppTab
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.motionReduced) private var reduced
+    @Environment(\.accent) private var accent
     // GestureState rather than State so a cancelled drag (a system gesture taking over) still
     // returns the lens to its lane.
     @GestureState private var dragX: CGFloat? = nil
     @State private var barWidth: CGFloat = 0
-    @State private var iconBounces: [AppTab: Int] = [:]
 
     private let tabs = AppTab.allCases
     private let lensInset: CGFloat = 4
@@ -33,29 +33,26 @@ struct ShioriTabBar: View {
         // High priority so a drag cancels the lane button under the finger; a tap never
         // travels the minimum distance, so it stays the button's.
         .highPriorityGesture(drag)
-        .sensoryFeedback(.selection, trigger: targetTab)
-        .onChange(of: selection) { _, tab in
-            if !reduceMotion { iconBounces[tab, default: 0] += 1 }
-        }
+        .shioriHaptic(.selection, trigger: targetTab)
         .accessibilityElement(children: .contain)
         .accessibilityAddTraits(.isTabBar)
     }
 
     private func lane(_ tab: AppTab) -> some View {
+        // The lane under a dragging finger lights up before release, so the icon's motion
+        // tracks the lens rather than waiting for the selection.
         let highlighted = tab == targetTab
         return Button {
             selection = tab
         } label: {
             VStack(spacing: 3) {
-                Image(systemName: tab.systemImage)
-                    .font(.system(size: 20))
-                    .frame(height: 24)
-                    .symbolEffect(.bounce, value: iconBounces[tab, default: 0])
+                IconView(tab.icon, active: highlighted, size: 24)
+                    .opacity(highlighted ? 1 : 0.62)
                 Text(tab.title)
                     .font(.system(size: 11, weight: highlighted ? .semibold : .medium))
+                    .foregroundStyle(highlighted ? accent : Tokens.inkSecondary)
                     .lineLimit(1)
             }
-            .foregroundStyle(highlighted ? Tokens.ink : Tokens.inkSecondary)
             .animation(.easeInOut(duration: 0.2), value: highlighted)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .contentShape(.rect)
@@ -72,15 +69,15 @@ struct ShioriTabBar: View {
         ZStack {
             if barWidth > 0 {
                 Capsule()
-                    .fill(Tokens.ink.opacity(0.1))
-                    .overlay { Capsule().strokeBorder(Tokens.ink.opacity(0.08), lineWidth: 0.5) }
+                    .fill(accent.opacity(0.1))
+                    .overlay { Capsule().strokeBorder(accent.opacity(0.08), lineWidth: 0.5) }
                     .frame(width: laneWidth - 2 * lensInset,
                            height: BarMetrics.height - 2 * lensInset)
-                    .scaleEffect(dragX != nil && !reduceMotion ? 1.06 : 1)
+                    .scaleEffect(dragX != nil && !reduced ? 1.06 : 1)
                     .offset(x: lensCenter - laneWidth / 2 + lensInset)
-                    // Under Reduce Motion a new selection swaps the lens for a fresh one, so it
+                    // Under reduced motion a new selection swaps the lens for a fresh one, so it
                     // crossfades between lanes instead of sliding.
-                    .id(reduceMotion ? Optional(selection) : nil)
+                    .id(reduced ? Optional(selection) : nil)
                     .transition(.opacity)
             }
         }
@@ -92,10 +89,10 @@ struct ShioriTabBar: View {
     }
 
     private var lensAnimation: Animation? {
-        switch (reduceMotion, dragX != nil) {
-        case (false, false): .spring(duration: 0.35, bounce: 0.25)
+        switch (reduced, dragX != nil) {
+        case (false, false): Motion.lens
         case (false, true): .interactiveSpring()
-        case (true, false): .easeInOut(duration: 0.15)
+        case (true, false): Motion.animation(Motion.lens, reduced: true)
         case (true, true): nil
         }
     }
