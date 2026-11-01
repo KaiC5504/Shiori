@@ -123,6 +123,8 @@ volumes, chapter-number search and reverse order; inline illustrations with the 
 and Save to Photos; the PDF reader. Left: Find, Notes, custom backgrounds, imported fonts,
 rotation, the volume illustration grid.
 
+**Build 6:** the page curl's back is drawn in the theme's paper, with the text showing through.
+
 - **Themes and screen:** paper themes and a custom background (§7.5), screen options,
   brightness, keep awake, rotation with a lock.
 - **Chrome (§7.7):** top bar, chapter slider, tool dock, info strip.
