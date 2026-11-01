@@ -95,10 +95,12 @@ final class CurlController: UIViewController, UIPageViewControllerDataSource, UI
         #endif
     }
 
-    /// The page alone: Apple's docs ask for its back too when double-sided, but iOS 27 throws
-    /// unless a Min spine gets exactly one, and takes the backs from the data source.
-    private func sheet(_ page: PagedPage, style: PageStyle) -> [UIViewController] {
-        [CurlPage(page: page, style: style, pageFrame: pageFrame)]
+    /// iOS 27 wants the page alone when nothing moves, and the page plus `turning`'s back for an
+    /// animated curl; any other count throws.
+    private func sheet(_ page: PagedPage, turning: PagedPage? = nil, style: PageStyle) -> [UIViewController] {
+        let front = CurlPage(page: page, style: style, pageFrame: pageFrame)
+        guard let turning, pager.isDoubleSided else { return [front] }
+        return [front, CurlBack(page: turning, style: style, pageFrame: pageFrame)]
     }
 
     private func turn(forward: Bool, animated: Bool = true) {
@@ -116,10 +118,12 @@ final class CurlController: UIViewController, UIPageViewControllerDataSource, UI
 
     private func curl(to target: PagedPage, forward: Bool, animated: Bool) {
         guard let style else { return }
+        // Forward, the current page curls away; back, the target's sheet curls in.
+        let turning = animated ? (forward ? current : target) : nil
         isTurning = animated
         current = target
         onTurn(target)
-        pager.setViewControllers(sheet(target, style: style),
+        pager.setViewControllers(sheet(target, turning: turning, style: style),
                                  direction: forward ? .forward : .reverse, animated: animated) { [weak self] _ in
             guard animated else { return }
             self?.finishTurning()
