@@ -33,7 +33,12 @@ final class CurlController: UIViewController, UIPageViewControllerDataSource, UI
     var onTurn: (PagedPage) -> Void = { _ in }
     var onMenu: () -> Void = {}
 
-    private let pager = UIPageViewController(transitionStyle: .pageCurl, navigationOrientation: .horizontal)
+    /// Double-sided from the start: SwiftUI hands over the first page before `viewDidLoad`.
+    private let pager: UIPageViewController = {
+        let pager = UIPageViewController(transitionStyle: .pageCurl, navigationOrientation: .horizontal)
+        pager.isDoubleSided = true
+        return pager
+    }()
     private var current: PagedPage?
     private var style: PageStyle?
     private var pageFrame: CGRect = .zero
@@ -54,7 +59,6 @@ final class CurlController: UIViewController, UIPageViewControllerDataSource, UI
         pager.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         view.addSubview(pager.view)
         pager.didMove(toParent: self)
-        pager.isDoubleSided = true
         pager.dataSource = self
         pager.delegate = self
         // Its own edge taps would turn pages; Shiori's tap zones decide instead.
