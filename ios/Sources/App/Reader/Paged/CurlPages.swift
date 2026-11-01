@@ -33,9 +33,11 @@ final class CurlController: UIViewController, UIPageViewControllerDataSource, UI
     var onTurn: (PagedPage) -> Void = { _ in }
     var onMenu: () -> Void = {}
 
-    /// Double-sided from the start: SwiftUI hands over the first page before `viewDidLoad`.
+    /// Double-sided before SwiftUI hands over the first page, and after the pager's view loads,
+    /// which may set it back.
     private let pager: UIPageViewController = {
         let pager = UIPageViewController(transitionStyle: .pageCurl, navigationOrientation: .horizontal)
+        pager.loadViewIfNeeded()
         pager.isDoubleSided = true
         return pager
     }()
@@ -93,10 +95,12 @@ final class CurlController: UIViewController, UIPageViewControllerDataSource, UI
         #endif
     }
 
-    /// A page and its back, which the double-sided curl always takes together.
+    /// A page and its back, which the double-sided curl always takes together. Single-sided,
+    /// the page passed on its own is the only count UIKit accepts.
     private func sheet(_ page: PagedPage, style: PageStyle) -> [UIViewController] {
-        [CurlPage(page: page, style: style, pageFrame: pageFrame),
-         CurlBack(page: page, style: style, pageFrame: pageFrame)]
+        let front = CurlPage(page: page, style: style, pageFrame: pageFrame)
+        guard pager.isDoubleSided else { return [front] }
+        return [front, CurlBack(page: page, style: style, pageFrame: pageFrame)]
     }
 
     private func turn(forward: Bool, animated: Bool = true) {
@@ -147,8 +151,10 @@ final class CurlController: UIViewController, UIPageViewControllerDataSource, UI
         if let back = viewController as? CurlBack {
             return CurlPage(page: back.page, style: style, pageFrame: pageFrame)
         }
-        return neighbour(of: viewController, forward: false)
-            .map { CurlBack(page: $0, style: style, pageFrame: pageFrame) }
+        guard let target = neighbour(of: viewController, forward: false) else { return nil }
+        return pageViewController.isDoubleSided
+            ? CurlBack(page: target, style: style, pageFrame: pageFrame)
+            : CurlPage(page: target, style: style, pageFrame: pageFrame)
     }
 
     func pageViewController(_ pageViewController: UIPageViewController,
@@ -158,9 +164,11 @@ final class CurlController: UIViewController, UIPageViewControllerDataSource, UI
             return chapters?.cachedNeighbour(of: back.page, forward: true)
                 .map { CurlPage(page: $0, style: style, pageFrame: pageFrame) }
         }
-        guard let page = (viewController as? CurlPage)?.page, neighbour(of: viewController, forward: true) != nil
-        else { return nil }
-        return CurlBack(page: page, style: style, pageFrame: pageFrame)
+        guard let page = (viewController as? CurlPage)?.page,
+              let target = neighbour(of: viewController, forward: true) else { return nil }
+        return pageViewController.isDoubleSided
+            ? CurlBack(page: page, style: style, pageFrame: pageFrame)
+            : CurlPage(page: target, style: style, pageFrame: pageFrame)
     }
 
     /// Nil at either end of the book, and while the next chapter is still being laid out.

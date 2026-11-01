@@ -161,11 +161,8 @@ jobs:
           find ~/Library/Logs/DiagnosticReports -name "Shiori*" -exec cp {} shots/crashes/ \; 2>/dev/null || true
           if [ -n "$(ls -A shots/crashes 2>/dev/null)" ]; then
             echo "CRASHES FOUND:"; ls -la shots/crashes; head -60 shots/crashes/* || true
-            # Simulator crash reports drop an exception's reason; the system log keeps it.
-            xcrun simctl spawn "${{ steps.sim.outputs.udid }}" log show --last 2h --style compact \
-              --predicate 'process == "Shiori"' 2>/dev/null \
-              | grep -a -i -E -A6 "uncaught exception|Fatal error|NSInvalidArgument|NSInternalInconsistency" \
-              | head -80 | tee shots/crashes/reasons.txt || true
+            # Debug builds write an uncaught exception's reason here (ShioriApp.swift).
+            echo "EXCEPTION:"; cat ~/shiori-exception.txt 2>/dev/null || echo "none written"
           else
             echo "no crash reports"
           fi

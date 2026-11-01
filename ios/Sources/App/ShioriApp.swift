@@ -8,9 +8,14 @@ struct ShioriApp: App {
 
     init() {
         #if DEBUG
-        // Crash reports drop an Objective-C exception's reason; a fatal error's message is kept.
+        // Simulator crash reports drop an Objective-C exception's reason, so it goes in a file in
+        // the host's home folder, where CI's crash step prints it.
         NSSetUncaughtExceptionHandler { exception in
-            fatalError("\(exception.name.rawValue): \(exception.reason ?? "no reason")")
+            let reason = "\(exception.name.rawValue): \(exception.reason ?? "no reason")\n"
+            if let home = ProcessInfo.processInfo.environment["SIMULATOR_HOST_HOME"] {
+                try? reason.write(toFile: home + "/shiori-exception.txt", atomically: true, encoding: .utf8)
+            }
+            fatalError(reason)
         }
         #endif
         do {
