@@ -7,6 +7,12 @@ struct ShioriApp: App {
     @State private var failure: String?
 
     init() {
+        #if DEBUG
+        // Crash reports drop an Objective-C exception's reason; a fatal error's message is kept.
+        NSSetUncaughtExceptionHandler { exception in
+            fatalError("\(exception.name.rawValue): \(exception.reason ?? "no reason")")
+        }
+        #endif
         do {
             _model = State(initialValue: try Self.makeModel())
         } catch {

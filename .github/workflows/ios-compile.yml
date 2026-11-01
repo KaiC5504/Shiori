@@ -21,6 +21,10 @@ on:
         description: "Also run the library tests, screenshots and reader UI tests"
         type: boolean
         default: false
+      only:
+        description: "With full: run only these UI tests, e.g. ReaderPagedTests/testCurlTurnsForward"
+        type: string
+        default: ""
 
 concurrency:
   group: ios-compile-${{ github.ref }}
@@ -133,6 +137,8 @@ jobs:
       # can't catch that, and it is what KaiC's phone test found.
       - name: Reader UI tests
         if: inputs.full
+        env:
+          ONLY: ${{ inputs.only }}
         run: |
           status=0
           xcodebuild test \
@@ -140,6 +146,7 @@ jobs:
             -scheme ShioriUITests \
             -destination "id=${{ steps.sim.outputs.udid }}" \
             -derivedDataPath build \
+            ${ONLY:+-only-testing:ShioriUITests/$ONLY} \
             CODE_SIGN_IDENTITY="-" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=YES \
