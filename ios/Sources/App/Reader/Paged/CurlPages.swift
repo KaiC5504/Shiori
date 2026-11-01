@@ -95,12 +95,10 @@ final class CurlController: UIViewController, UIPageViewControllerDataSource, UI
         #endif
     }
 
-    /// A page and its back, which the double-sided curl always takes together. Single-sided,
-    /// the page passed on its own is the only count UIKit accepts.
+    /// The page alone: Apple's docs ask for its back too when double-sided, but iOS 27 throws
+    /// unless a Min spine gets exactly one, and takes the backs from the data source.
     private func sheet(_ page: PagedPage, style: PageStyle) -> [UIViewController] {
-        let front = CurlPage(page: page, style: style, pageFrame: pageFrame)
-        guard pager.isDoubleSided else { return [front] }
-        return [front, CurlBack(page: page, style: style, pageFrame: pageFrame)]
+        [CurlPage(page: page, style: style, pageFrame: pageFrame)]
     }
 
     private func turn(forward: Bool, animated: Bool = true) {
