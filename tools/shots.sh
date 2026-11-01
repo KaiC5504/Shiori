@@ -52,6 +52,7 @@ shoot 22-pdf 12 -DemoTab shelf -DemoPDF YES
 shoot 22b-pdf-thumbnails 12 -DemoTab shelf -DemoPDF thumbs
 shoot 23-screen 12 -DemoTab shelf -DemoReader 1 -DemoAppearance YES -DemoAppearancePage screen
 shoot 24-paged 12 -DemoTab shelf -DemoReader 1 -DemoLayout paged
+shoot 25-curl-back 14 -DemoTab shelf -DemoReader 1 -DemoLayout paged -DemoEffect curl -DemoCurlFreeze YES
 
 xcrun simctl ui "$UDID" appearance dark
 shoot 04-shelf-dark 10 -DemoTab shelf -DemoUpdated YES
@@ -63,5 +64,6 @@ shoot 12-import-folder-dark 12 -DemoTab imports -DemoWatchedFolder YES -DemoImpo
 shoot 13-reader-chrome-dark 12 -DemoTab shelf -DemoReader 1 -DemoChrome YES -DemoTheme night
 shoot 18-detail-dark 12 -DemoTab shelf -DemoDetail 1
 shoot 24-paged-dark 12 -DemoTab shelf -DemoReader 1 -DemoLayout paged -DemoTheme night
+shoot 25-curl-back-night 14 -DemoTab shelf -DemoReader 1 -DemoLayout paged -DemoEffect curl -DemoCurlFreeze YES -DemoTheme night
 xcrun simctl ui "$UDID" appearance light
 ls "$OUT"

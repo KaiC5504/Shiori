@@ -404,6 +404,9 @@ reads.
    - It must hold 120 fps. This is the riskiest piece of the app, so the roadmap gives
      it its own spike.
 3. **Page curl, Apple's.** `UIPageViewController` with `.pageCurl`, wrapped for SwiftUI.
+   Double-sided, with Shiori drawing the back: the theme's paper a shade toward the ink, and
+   the page's text showing through faintly, mirrored. Apple's single-sided back is a cold
+   white that clashed with every theme (KaiC, build 5).
 
 Under Reduce Motion, every effect becomes a quick crossfade.
 

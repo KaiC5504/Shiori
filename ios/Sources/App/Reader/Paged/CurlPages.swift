@@ -3,7 +3,8 @@ import SwiftUI
 import UIKit
 
 /// Apple's page curl (spec §7.2, item 3): `UIPageViewController` turning `PageCanvas` pages.
-/// The curl has its own pace, so the relay's speed doesn't apply.
+/// The curl has its own pace, so the relay's speed doesn't apply. It's double-sided because the
+/// single-sided curl washes the page's back in a cold white that matches no theme's paper.
 struct CurlPages: UIViewControllerRepresentable {
     let page: PagedPage
     let style: PageStyle
@@ -53,6 +54,7 @@ final class CurlController: UIViewController, UIPageViewControllerDataSource, UI
         pager.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         view.addSubview(pager.view)
         pager.didMove(toParent: self)
+        pager.isDoubleSided = true
         pager.dataSource = self
         pager.delegate = self
         // Its own edge taps would turn pages; Shiori's tap zones decide instead.
@@ -67,8 +69,9 @@ final class CurlController: UIViewController, UIPageViewControllerDataSource, UI
         self.style = style
         self.pageFrame = pageFrame
         if restyled {
-            for case let shown as CurlPage in pager.viewControllers ?? [] {
-                shown.show(style: style, in: pageFrame)
+            for shown in pager.viewControllers ?? [] {
+                (shown as? CurlPage)?.show(style: style, in: pageFrame)
+                (shown as? CurlBack)?.show(style: style, in: pageFrame)
             }
         }
         guard page != current else { return }
@@ -76,9 +79,20 @@ final class CurlController: UIViewController, UIPageViewControllerDataSource, UI
             deferred = page
             return
         }
+        #if DEBUG
+        let first = current == nil
+        #endif
         current = page
-        pager.setViewControllers([CurlPage(page: page, style: style, pageFrame: pageFrame)], direction: .forward,
-                                 animated: false)
+        pager.setViewControllers(sheet(page, style: style), direction: .forward, animated: false)
+        #if DEBUG
+        if first, DemoLaunch.freezesCurl { freezeForDemo() }
+        #endif
+    }
+
+    /// A page and its back, which the double-sided curl always takes together.
+    private func sheet(_ page: PagedPage, style: PageStyle) -> [UIViewController] {
+        [CurlPage(page: page, style: style, pageFrame: pageFrame),
+         CurlBack(page: page, style: style, pageFrame: pageFrame)]
     }
 
     private func turn(forward: Bool, animated: Bool = true) {
@@ -99,7 +113,7 @@ final class CurlController: UIViewController, UIPageViewControllerDataSource, UI
         isTurning = animated
         current = target
         onTurn(target)
-        pager.setViewControllers([CurlPage(page: target, style: style, pageFrame: pageFrame)],
+        pager.setViewControllers(sheet(target, style: style),
                                  direction: forward ? .forward : .reverse, animated: animated) { [weak self] _ in
             guard animated else { return }
             self?.finishTurning()
@@ -121,21 +135,34 @@ final class CurlController: UIViewController, UIPageViewControllerDataSource, UI
         }
     }
 
+    // Double-sided, the pages run front, back, front: going back, the sheet that curls in is the
+    // previous page's back, then its front.
     func pageViewController(_ pageViewController: UIPageViewController,
                             viewControllerBefore viewController: UIViewController) -> UIViewController? {
-        neighbour(of: viewController, forward: false)
+        guard let style else { return nil }
+        if let back = viewController as? CurlBack {
+            return CurlPage(page: back.page, style: style, pageFrame: pageFrame)
+        }
+        return neighbour(of: viewController, forward: false)
+            .map { CurlBack(page: $0, style: style, pageFrame: pageFrame) }
     }
 
     func pageViewController(_ pageViewController: UIPageViewController,
                             viewControllerAfter viewController: UIViewController) -> UIViewController? {
-        neighbour(of: viewController, forward: true)
+        guard let style else { return nil }
+        if let back = viewController as? CurlBack {
+            return chapters?.cachedNeighbour(of: back.page, forward: true)
+                .map { CurlPage(page: $0, style: style, pageFrame: pageFrame) }
+        }
+        guard let page = (viewController as? CurlPage)?.page, neighbour(of: viewController, forward: true) != nil
+        else { return nil }
+        return CurlBack(page: page, style: style, pageFrame: pageFrame)
     }
 
     /// Nil at either end of the book, and while the next chapter is still being laid out.
-    private func neighbour(of viewController: UIViewController, forward: Bool) -> UIViewController? {
-        guard !isTurning, let page = (viewController as? CurlPage)?.page, let style,
-              let target = chapters?.cachedNeighbour(of: page, forward: forward) else { return nil }
-        return CurlPage(page: target, style: style, pageFrame: pageFrame)
+    private func neighbour(of viewController: UIViewController, forward: Bool) -> PagedPage? {
+        guard !isTurning, let page = (viewController as? CurlPage)?.page else { return nil }
+        return chapters?.cachedNeighbour(of: page, forward: forward)
     }
 
     func pageViewController(_ pageViewController: UIPageViewController,
@@ -145,12 +172,29 @@ final class CurlController: UIViewController, UIPageViewControllerDataSource, UI
 
     func pageViewController(_ pageViewController: UIPageViewController, didFinishAnimating finished: Bool,
                             previousViewControllers: [UIViewController], transitionCompleted completed: Bool) {
-        if completed, let page = (pageViewController.viewControllers?.first as? CurlPage)?.page, page != current {
+        if completed, let page = pageViewController.viewControllers?.lazy.compactMap({ $0 as? CurlPage }).first?.page,
+           page != current {
             current = page
             onTurn(page)
         }
         finishTurning()
     }
+
+    #if DEBUG
+    /// Stops a forward curl partway, so a screenshot can show the page's back.
+    private func freezeForDemo() {
+        Task { [weak self] in
+            // Past the reader's own cover sliding in.
+            try? await Task.sleep(for: .seconds(3))
+            guard let self else { return }
+            view.layer.speed = 0
+            turn(forward: true)
+            // A later run loop, so the curl's animations start on the frozen clock first.
+            try? await Task.sleep(for: .milliseconds(100))
+            view.layer.timeOffset = 0.3
+        }
+    }
+    #endif
 }
 
 private final class CurlPage: UIViewController {
@@ -177,6 +221,77 @@ private final class CurlPage: UIViewController {
         self.style = style
         self.pageFrame = pageFrame
         if isViewLoaded { canvas.show(page, style: style, in: pageFrame) }
+    }
+}
+
+/// The underside of a page: the theme's paper, a shade toward the ink, with the page's text
+/// showing through faintly and mirrored, as it would through thin paper.
+private final class CurlBack: UIViewController {
+    let page: PagedPage
+    private let showThrough = CALayer()
+    private var style: PageStyle
+    private var pageFrame: CGRect
+    private var image: CGImage?
+
+    init(page: PagedPage, style: PageStyle, pageFrame: CGRect) {
+        self.page = page
+        self.style = style
+        self.pageFrame = pageFrame
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) { nil }
+
+    override func loadView() {
+        view = UIView()
+        view.accessibilityElementsHidden = true
+        showThrough.opacity = 0.08
+        showThrough.transform = CATransform3DMakeScale(-1, 1, 1)
+        view.layer.addSublayer(showThrough)
+        draw()
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        place()
+    }
+
+    func show(style: PageStyle, in pageFrame: CGRect) {
+        if style != self.style || pageFrame.size != self.pageFrame.size { image = nil }
+        self.style = style
+        self.pageFrame = pageFrame
+        if isViewLoaded { draw() }
+    }
+
+    private func draw() {
+        view.backgroundColor = Self.blend(style.paper, toward: style.ink, by: 0.05)
+        if image == nil { image = PageRenderer.image(of: page, size: pageFrame.size, style: style) }
+        CATransaction.withoutActions {
+            showThrough.contents = image
+            showThrough.contentsScale = max(style.scale, 1)
+        }
+        place()
+    }
+
+    /// Seen from behind, the text's box sits mirrored across the page.
+    private func place() {
+        let scale = max(style.scale, 1)
+        let size = image.map { CGSize(width: CGFloat($0.width) / scale, height: CGFloat($0.height) / scale) } ?? .zero
+        let x = view.bounds.width - pageFrame.minX - size.width
+        CATransaction.withoutActions {
+            showThrough.bounds = CGRect(origin: .zero, size: size)
+            showThrough.position = CGPoint(x: x + size.width / 2, y: pageFrame.minY + size.height / 2)
+        }
+    }
+
+    private static func blend(_ paper: CGColor, toward ink: CGColor, by amount: CGFloat) -> UIColor {
+        var (r1, g1, b1, a1): (CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0)
+        var (r2, g2, b2, a2): (CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0)
+        guard UIColor(cgColor: paper).getRed(&r1, green: &g1, blue: &b1, alpha: &a1),
+              UIColor(cgColor: ink).getRed(&r2, green: &g2, blue: &b2, alpha: &a2)
+        else { return UIColor(cgColor: paper) }
+        return UIColor(red: r1 + (r2 - r1) * amount, green: g1 + (g2 - g1) * amount,
+                       blue: b1 + (b2 - b1) * amount, alpha: 1)
     }
 }
 

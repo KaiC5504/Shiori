@@ -44,6 +44,8 @@ enum DemoLaunch {
     static var contentsQuery: String? { arguments.string(forKey: "DemoContentsQuery") }
     /// The first illustration the reader shows opens the zoom viewer.
     static var opensImageViewer: Bool { arguments.bool(forKey: "DemoImageViewer") }
+    /// The curl stops partway through its first forward turn, showing the page's back.
+    static var freezesCurl: Bool { arguments.bool(forKey: "DemoCurlFreeze") }
     /// "YES" imports a generated PDF and opens it; "thumbs" also opens its thumbnail grid.
     static var pdf: String? { arguments.string(forKey: "DemoPDF") }
 

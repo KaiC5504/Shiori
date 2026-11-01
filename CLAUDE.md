@@ -66,7 +66,8 @@ minimum is iOS 26.
 - Debug builds read demo launch arguments: `-DemoData YES`, `-DemoTab shelf|imports|settings`,
   `-DemoReader <n>`, `-DemoContents YES`, `-DemoImportResults YES`, and since wave 3
   `-DemoDetail <n>`, `-DemoContentsQuery <q>`, `-DemoImageViewer YES`, `-DemoPDF YES|thumbs`,
-  `-DemoLayout paged`, `-DemoEffect relay|curl`, `-DemoAppearancePage screen`. Every new screen gets
+  `-DemoLayout paged`, `-DemoEffect relay|curl`, `-DemoCurlFreeze YES` (a curl stopped mid-turn),
+  `-DemoAppearancePage screen`. Every new screen gets
   a `shot` line in `tools/shots.sh` (shared by CI and the Mac), in light and in dark where
   it matters.
 
